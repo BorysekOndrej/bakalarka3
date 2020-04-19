@@ -181,12 +181,7 @@ def api_target():
         notifications = actions.generic_get_create_edit_from_data(db_schemas.NotificationsSchema, notifications_def,
                                                                   get_only=get_only)
 
-    return jsonify(
-        {"target": db_schemas.TargetSchema().dump(target),
-         "scanOrder": db_schemas.ScanOrderSchema(only=("periodicity", "active")).dump(scan_order),
-         "notifications": db_schemas.NotificationsSchema(only=["preferences"]).dump(notifications).get("preferences", {})
-         }
-    )
+    return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
 
 
 @app.route('/api/v1/get_target_info_for_dialog', methods=['POST'])
@@ -206,11 +201,7 @@ def api_get_target_info_for_dialog():
                                                               {"target_id": target.id, "user_id": user_jwt["id"]},
                                                               get_only=True)
 
-    return jsonify({"target": db_schemas.TargetSchema().dump(target),
-                    "scanOrder": db_schemas.ScanOrderSchema(only=("periodicity", "active")).dump(scan_order),
-                    "notifications": db_schemas.NotificationsSchema(only=["preferences"]).dump(notifications).get("preferences", {})
-           })
-    # return "", 200
+    return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
 
 
 @app.route('/api/v1/add_scan_order', methods=['POST'])
