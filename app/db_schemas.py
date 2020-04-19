@@ -23,6 +23,7 @@ class BaseSchema(SQLAlchemySchema):
 class TargetSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
         model = app.db_models.Target
+        exclude = ()  # I want to dump the id in this scheme
     protocol = EnumField(sslyze.ssl_settings.TlsWrappedProtocolEnum)
 
 
