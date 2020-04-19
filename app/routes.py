@@ -183,7 +183,7 @@ def api_target():
     data = json.loads(request.data)
     data["target"]["protocol"] = data.get("protocol", "HTTPS").replace("TlsWrappedProtocolEnum.",
                                                                        "")  # todo: remove this hack
-
+    data["target"].pop("id", None)
     target = actions.generic_get_create_edit_from_data(db_schemas.TargetSchema, data["target"])
 
     if data.get("scanOrder", None):
