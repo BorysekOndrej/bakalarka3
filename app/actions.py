@@ -44,7 +44,7 @@ def full_target_settings_to_dict(target: db_models.Target, scan_order: db_models
 
 
 def get_target_from_id(target_id: int) -> db_models.Target:
-    return db_models.db.session.query(app.db_models.Target).get(target_id)
+    return db_models.db.session.query(db_models.Target).get(target_id)
 
 
 def get_target_from_id_if_user_can_see(target_id: int, user_id: int) -> Optional[db_models.Target]:

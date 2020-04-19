@@ -110,11 +110,13 @@ def debug_domain_to_target_string(domain):
     return repr(db_models.Target(hostname=domain))
 
 
-
 @app.route('/api/v1/get_target_id_from_definition', methods=['POST'])
 @flask_jwt_extended.jwt_required
-def get_target_id():
-    data = json.loads(request.data)
+def get_target_id(target_def=None):
+    if target_def:
+        data = target_def
+    else:
+        data = json.loads(request.data)
     # logger.warning(data)
     data["protocol"] = data.get("protocol", "HTTPS").replace("TlsWrappedProtocolEnum.", "")  # todo: remove this hack
     target = actions.generic_get_create_edit_from_data(db_schemas.TargetSchema, data, get_only=True)
@@ -141,19 +143,15 @@ def api_get_target_from_id(target_id):
     return db_schemas.TargetSchema().dump(target), 200
 
 
-@app.route('/api/v1/add_target', methods=['POST', 'PUT'])
-@app.route('/api/v1/target', methods=['POST', 'DELETE'])
+@app.route('/api/v1/target/<int:target_id>', methods=['GET', 'DELETE'])
 @flask_jwt_extended.jwt_required
-def api_target(passed_target: db_models.Target):
-    data = json.loads(request.data)
-    # logger.warning(data)
-    data["target"]["protocol"] = data.get("protocol", "HTTPS").replace("TlsWrappedProtocolEnum.",
-                                                                       "")  # todo: remove this hack
-    get_only = request.method in ['GET', 'POST']
-
-    target = actions.generic_get_create_edit_from_data(db_schemas.TargetSchema, data["target"], get_only=get_only)
+def api_target_by_id(target_id: int):
     user_jwt = flask_jwt_extended.get_jwt_identity()
     user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+
+    target = actions.get_target_from_id_if_user_can_see(target_id, user_id)
+    if target is None:
+        return "Target either doesn't exist or you're allowed to see it.", 400
 
     if request.method == 'DELETE':
         scan_order: db_models.ScanOrder = actions.generic_get_create_edit_from_data(
@@ -164,41 +162,41 @@ def api_target(passed_target: db_models.Target):
         if scan_order:
             scan_order.active = False
             db_models.db.session.commit()
-            return "ok", 200
-        return "fail", 404
 
-    scan_order_def = db_utils.merge_dict_with_copy_and_overwrite(data.get("scanOrder", {}),
-                                                                 {"target_id": target.id, "user_id": user_jwt["id"]})
-    scan_order = actions.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema, scan_order_def,
-                                                           get_only=get_only)
-
-    if data.get("notifications", None):
-        notifications_def = db_utils.merge_dict_with_copy_and_overwrite({"preferences": data.get("notifications", {})},
-                                                                        {"target_id": target.id, "user_id": user_jwt["id"]})
-        notifications = actions.generic_get_create_edit_from_data(db_schemas.NotificationsSchema, notifications_def,
-                                                                  get_only=get_only)
-
-    return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
-
-
-@app.route('/api/v1/get_target_info_for_dialog', methods=['POST'])
-@flask_jwt_extended.jwt_required
-def api_get_target_info_for_dialog():
-    data = json.loads(request.data)
-    # logger.warning(data)
-    data["protocol"] = data.get("protocol", "HTTPS").replace("TlsWrappedProtocolEnum.", "")  # todo: remove this hack
-    data = db_utils.dict_filter_to_class_variables(db_models.Target, data)
-    target = actions.generic_get_create_edit_from_data(db_schemas.TargetSchema, data, get_only=True)
-
-    user_jwt = flask_jwt_extended.get_jwt_identity()
     scan_order = actions.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema,
-                                                           {"target_id": target.id, "user_id": user_jwt["id"]},
+                                                           {"target_id": target.id, "user_id": user_id},
                                                            get_only=True)
     notifications = actions.generic_get_create_edit_from_data(db_schemas.NotificationsSchema,
-                                                              {"target_id": target.id, "user_id": user_jwt["id"]},
+                                                              {"target_id": target.id, "user_id": user_id},
                                                               get_only=True)
 
     return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
+
+
+@app.route('/api/v1/add_target', methods=['POST', 'PUT'])
+@app.route('/api/v1/target', methods=['PUT', 'PATCH'])
+@flask_jwt_extended.jwt_required
+def api_target():
+    user_jwt = flask_jwt_extended.get_jwt_identity()
+    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+
+    data = json.loads(request.data)
+    data["target"]["protocol"] = data.get("protocol", "HTTPS").replace("TlsWrappedProtocolEnum.",
+                                                                       "")  # todo: remove this hack
+
+    target = actions.generic_get_create_edit_from_data(db_schemas.TargetSchema, data["target"])
+
+    if data.get("scanOrder", None):
+        scan_order_def = db_utils.merge_dict_with_copy_and_overwrite(data.get("scanOrder", {}),
+                                                                     {"target_id": target.id, "user_id": user_id})
+        actions.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema, scan_order_def)
+
+    if data.get("notifications", None):
+        notifications_def = db_utils.merge_dict_with_copy_and_overwrite({"preferences": data.get("notifications", {})},
+                                                                        {"target_id": target.id, "user_id": user_id})
+        actions.generic_get_create_edit_from_data(db_schemas.NotificationsSchema, notifications_def)
+
+    return api_target_by_id(target.id)
 
 
 @app.route('/api/v1/add_scan_order', methods=['POST'])
