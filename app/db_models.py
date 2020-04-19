@@ -75,7 +75,13 @@ class UniqueModel(object):
 @event.listens_for(Base, 'before_update', propagate=True)
 def receive_before_update(mapper, connection, target):
     if hasattr(target, '__noUpdate__'):
-        logger.error(f"Update of table with noUpdate: {type(target)}")
+        logger.error(f"Delete of record in table with noUpdate: {type(target)}")
+
+
+@event.listens_for(Base, 'before_delete', propagate=True)
+def receive_before_delete(mapper, connection, target):
+    if hasattr(target, '__noUpdate__'):
+        logger.error(f"Delete of record in table with noUpdate: {type(target)}")
 
 
 # ----------- Users -----------

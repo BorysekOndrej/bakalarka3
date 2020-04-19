@@ -1,5 +1,5 @@
 import enum
-from typing import Tuple
+from typing import Tuple, Optional
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
@@ -90,11 +90,11 @@ def get_or_create_by_unique(model: app.db.Model, kwargs: dict, search_by: dict, 
             return model.query.filter_by(**search_by).one(), True
         except NoResultFound:
             if get_only:
-                raise
+                return None, False
             return get_one_or_create(model, **kwargs)
 
 
-def get_or_create_or_update_by_unique(model: app.db.Model, kwargs: dict, get_only=False) -> app.db.Model:
+def get_or_create_or_update_by_unique(model: app.db.Model, kwargs: dict, get_only=False) -> Optional[app.db.Model]:
     kwargs, search_by = get_search_by(model, kwargs)
     res, existing = get_or_create_by_unique(model, kwargs, search_by, get_only=get_only)
 
