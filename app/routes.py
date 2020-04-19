@@ -368,13 +368,18 @@ def api_get_user_targets():
     jwt = flask_jwt_extended.get_jwt_identity()
     # logger.debug(jwt)
     res = db_models.db.session \
-        .query(db_models.Target) \
+        .query(db_models.Target, db_models.ScanOrder.active) \
         .join(db_models.ScanOrder) \
         .filter(db_models.ScanOrder.user_id == jwt["id"]) \
         .all()
 
     schema = db_schemas.TargetSchema(many=True)
-    json_dict = schema.dump(res)
+    json_dict = schema.dump([x.Target for x in res])
+
+    for obj in json_dict:
+        for single_res in res:
+            if obj["id"] == single_res.Target.id:
+                obj["active"] = 'yes' if single_res.active else 'no'
 
     for x in json_dict:
         x["grade"] = random.choice([chr(ord('A')+i) for i in range(5)])
