@@ -131,23 +131,20 @@ def get_target_id():
 
 @app.route('/api/v1/get_target_from_id/<int:target_id>', methods=['GET'])
 @flask_jwt_extended.jwt_required
-def get_target_from_id(target_id):
+def api_get_target_from_id(target_id):
     user_jwt = flask_jwt_extended.get_jwt_identity()
     user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
 
-    # validate that the user entered the target definition at least once. Protection against enumaration attack.
-    if not actions.can_user_get_target_definition_by_id(target_id, user_id):
-        return "fail", 400
-
-    # The following should always pass. If there isn't target, there shouldn't be scan order.
-    target = db_models.db.session.query(db_models.Target).get(target_id)
+    target = actions.get_target_from_id_if_user_can_see(target_id, user_id)
+    if target is None:
+        return "Target either doesn't exist or you're allowed to see it.", 400
     return db_schemas.TargetSchema().dump(target), 200
 
 
 @app.route('/api/v1/add_target', methods=['POST', 'PUT'])
 @app.route('/api/v1/target', methods=['POST', 'DELETE'])
 @flask_jwt_extended.jwt_required
-def api_target():
+def api_target(passed_target: db_models.Target):
     data = json.loads(request.data)
     # logger.warning(data)
     data["target"]["protocol"] = data.get("protocol", "HTTPS").replace("TlsWrappedProtocolEnum.",
