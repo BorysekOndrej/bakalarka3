@@ -141,15 +141,16 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size):
             ips = utils.dns_utils.get_ips_for_domain(single_target.hostname)
 
             if len(ips) == 0:
+
                 # todo: mark as scanned in LastScan
                 # todo: scan result
                 continue
 
             for ip in ips:
-                nt = single_target.make_copy()
+                new_target = single_target.make_copy()
                 ip_type, ip_addr = ip
-                nt.ip_address = ip_addr
-                new_target_with_extra = app.TargetWithExtra(nt, {"comes_from_dns": True})
+                new_target.ip_address = ip_addr
+                new_target_with_extra = app.db_models.TargetWithExtra(new_target, {"comes_from_dns": True})
                 targets_e.add(new_target_with_extra)
 
         new_size = len(targets_e)
