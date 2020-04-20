@@ -43,8 +43,6 @@ class UniqueModel(object):
         if obj is None:
             return None
         res, returned_from_select = utils.db_utils.get_one_or_create(cls, **obj)
-        if not returned_from_select and hasattr(res, "on_change"):
-            res.on_change()
         return res.id
 
     @classmethod
@@ -74,12 +72,16 @@ class UniqueModel(object):
 
 @event.listens_for(Base, 'before_update', propagate=True)
 def receive_before_update(mapper, connection, target):
+    # Respect the restrictions made by SQLAlchemy. Check before any modifications to DB.
+    # This does not solve the update for ScanOrderMinimal.
     if hasattr(target, '__noUpdate__'):
         logger.error(f"Delete of record in table with noUpdate: {type(target)}")
 
 
 @event.listens_for(Base, 'before_delete', propagate=True)
 def receive_before_delete(mapper, connection, target):
+    # Respect the restrictions made by SQLAlchemy. Check before any modifications to DB.
+    # This does not solve the update for ScanOrderMinimal.
     if hasattr(target, '__noUpdate__'):
         logger.error(f"Delete of record in table with noUpdate: {type(target)}")
 
@@ -172,13 +174,11 @@ class ScanOrder(Base, UniqueModel):
 
     periodicity = db.Column(db.Integer, default=SchedulerConfig.default_target_scan_periodicity)  # in seconds
 
-    def on_change(self):
-        self.__update_minimal_order()
-
-    def on_delete(self):
-        self.__update_minimal_order()
-
-    def __update_minimal_order(self):
+    def on_modification(self):
+        # Warning: This method should be either
+        #   - automatically called by using generic_get_create_edit_from_data OR
+        #   - MANUALLY called after any commit involving ScanOrder done without that function.
+        # Warning: Experiments with automatic hooks did not prove fruitful.
         self.__update_minimal_order_for_id(self.target_id)
 
     @classmethod

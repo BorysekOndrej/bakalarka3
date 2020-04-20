@@ -99,6 +99,9 @@ def get_or_create_or_update_by_unique(model: app.db.Model, kwargs: dict, get_onl
     res, existing = get_or_create_by_unique(model, kwargs, search_by, get_only=get_only)
 
     if not existing or get_only:
+        if not get_only:  # this means the record is newly inserted
+            if hasattr(res, 'on_modification'):
+                res.on_modification()
         return res
 
     something_changed = False
@@ -113,5 +116,7 @@ def get_or_create_or_update_by_unique(model: app.db.Model, kwargs: dict, get_onl
 
     if something_changed:
         app.db.session.commit()
+        if hasattr(res, 'on_modification'):
+            res.on_modification()
 
     return res

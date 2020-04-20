@@ -156,16 +156,13 @@ def api_target_by_id(target_id: int):
     if request.method == 'DELETE':
         scan_order: db_models.ScanOrder = actions.generic_get_create_edit_from_data(
             db_schemas.ScanOrderSchema,
-            {"target_id": target.id, "user_id": user_id},
-            get_only=True
+            {"target_id": target.id, "user_id": user_id, 'active': False}
         )
-        if scan_order:
-            scan_order.active = False
-            db_models.db.session.commit()
 
     scan_order = actions.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema,
                                                            {"target_id": target.id, "user_id": user_id},
                                                            get_only=True)
+
     notifications = actions.generic_get_create_edit_from_data(db_schemas.NotificationsSchema,
                                                               {"target_id": target.id, "user_id": user_id},
                                                               get_only=True)
@@ -209,7 +206,7 @@ def api_add_scan_order():
     result = schema.load(data)
     db_models.db.session.add(result)
     db_models.db.session.commit()
-    result.on_change()
+    result.on_modifications()
     return repr(result)
 
 
