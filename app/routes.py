@@ -156,8 +156,13 @@ def api_target_by_id(target_id: int):
     if request.method == 'DELETE':
         scan_order: db_models.ScanOrder = actions.generic_get_create_edit_from_data(
             db_schemas.ScanOrderSchema,
-            {"target_id": target.id, "user_id": user_id, 'active': False}
+            {"target_id": target.id, "user_id": user_id},
+            get_only=True
         )
+        scan_order.active = False
+        db_models.db.session.commit()
+        scan_order.on_modification()
+
 
     scan_order = actions.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema,
                                                            {"target_id": target.id, "user_id": user_id},
