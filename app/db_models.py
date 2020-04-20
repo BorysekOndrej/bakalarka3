@@ -12,7 +12,6 @@ import app
 import utils.db_utils
 from sslyze.ssl_settings import TlsWrappedProtocolEnum
 
-import app.scan_scheduler
 from config import SchedulerConfig
 
 db = app.db
@@ -156,6 +155,7 @@ class ScanOrder(Base, UniqueModel):
     __tablename__ = 'scanorders'
     __uniqueColumns__ = ['target_id', 'user_id']
     __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
+    on_modification = True
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -168,18 +168,6 @@ class ScanOrder(Base, UniqueModel):
     active = db.Column(db.Boolean, default=True)
 
     periodicity = db.Column(db.Integer, default=SchedulerConfig.default_target_scan_periodicity)  # in seconds
-
-    def on_modification(self):
-        # Warning: This method should be either
-        #   - automatically called by using generic_get_create_edit_from_data OR
-        #   - MANUALLY called after any commit involving ScanOrder done without that function.
-        # Warning: Experiments with automatic hooks did not prove fruitful.
-        self.__update_minimal_order_for_id(self.target_id)
-
-    @classmethod
-    def __update_minimal_order_for_id(cls, target_id):
-        app.scan_scheduler.update_scan_order_minimal_for_target(target_id)
-        LastScan.create_if_not_existent(target_id=target_id)
 
 
 class ScanOrderMinimal(Base):

@@ -100,8 +100,8 @@ def get_or_create_or_update_by_unique(model: app.db.Model, kwargs: dict, get_onl
 
     if not existing or get_only:
         if not get_only:  # this means the record is newly inserted
-            if hasattr(res, 'on_modification'):
-                res.on_modification()
+            if hasattr(res, 'on_modification') and res.on_modification:
+                actions_on_modification(res)
         return res
 
     something_changed = False
@@ -116,7 +116,17 @@ def get_or_create_or_update_by_unique(model: app.db.Model, kwargs: dict, get_onl
 
     if something_changed:
         app.db.session.commit()
-        if hasattr(res, 'on_modification'):
-            res.on_modification()
+        if hasattr(res, 'on_modification') and res.on_modification:
+            actions_on_modification(res)
 
     return res
+
+
+def actions_on_modification(res):
+    if isinstance(res, app.db_models.ScanOrder):
+        scan_order_minimal_recalculate(res.target_id)
+
+
+def scan_order_minimal_recalculate(target_id: int):
+    app.scan_scheduler.update_scan_order_minimal_for_target(target_id)
+    app.db_models.LastScan.create_if_not_existent(target_id=target_id)
