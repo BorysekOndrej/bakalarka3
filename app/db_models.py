@@ -135,7 +135,7 @@ class Target(Base, UniqueModel):
         return res
 
     def make_copy(self):
-        return app.db_models.Target.from_repr_to_transient(repr(self))
+        return Target.from_repr_to_transient(repr(self))
 
 
 class TargetWithExtra(object):
