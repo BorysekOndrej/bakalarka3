@@ -308,10 +308,6 @@ def refresh():
 @app.route('/api/debug/scenario1', methods=['GET'])
 def scenario1():
     try:
-        # res = db_models.ScanOrder.query.all()
-        # for x in res:
-        #     x.delete_this_object()
-
         db_models.User(username="test1", email="test1@example.com",
                        password_hash=authentication_utils.generate_password_hash("lorem"), main_api_key="aaaaa")
         db_models.Target.from_kwargs({"hostname": "borysek.eu"})

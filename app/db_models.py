@@ -58,11 +58,6 @@ class UniqueModel(object):
         res_resorted = sorted(res, key=lambda x: stringlist_as_tuple.index(x.id))
         return res_resorted  # original order is important in some cases
 
-    def delete_this_object(self):
-        db.session.delete(self)
-        if hasattr(self, "on_delete"):
-            self.on_delete()
-        db.session.commit()
 
     @classmethod
     def attribute_names(cls):
