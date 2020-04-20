@@ -4,14 +4,13 @@ from sqlalchemy import func
 
 import app
 import app.db_models
-# import app.db_schemas
 from config import SchedulerConfig
 import utils.dns_utils
+import db_utils
 
 logger = app.logger
 
 db = app.db
-# TargetWithExtra
 
 
 def default_current_time(query_compare_time=None):
@@ -41,16 +40,11 @@ def update_scan_order_minimal_for_target(target_id: int) -> Optional[int]:
         db.session.commit()
         return min_periodicity
 
-    # todo: refactor
-    try:
-        som = app.db_models.ScanOrderMinimal(id=target_id, periodicity=min_periodicity)
-        db.session.add(som)
+    som, _ = db_utils.get_one_or_create(app.db_models.ScanOrderMinimal, **{"id": target_id})
+    if som.periodicity != min_periodicity:
+        som.periodicity = min_periodicity
         db.session.commit()
-    except Exception as _:
-        db.session.rollback()
-        res2: app.db_models.ScanOrderMinimal = app.db_models.ScanOrderMinimal.query.get(target_id)
-        res2.periodicity = min_periodicity
-        db.session.commit()
+
     return min_periodicity
 
 
