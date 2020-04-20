@@ -139,6 +139,12 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size):
                 continue
 
             ips = utils.dns_utils.get_ips_for_domain(single_target.hostname)
+
+            if len(ips) == 0:
+                # todo: mark as scanned in LastScan
+                # todo: scan result
+                continue
+
             for ip in ips:
                 nt = single_target.make_copy()
                 ip_type, ip_addr = ip
