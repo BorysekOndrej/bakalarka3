@@ -28,17 +28,6 @@ def default_enqueued_offseted_time():
     return offset_time_back_from_now(SchedulerConfig.enqueue_min_time)
 
 
-# The following doesn't work as well as I would have hopped. Will do it manually for now.
-# @event.listens_for(db.session, 'after_flush')
-# def after_flush_trigger(session, flush_context):
-#     # this doesn't work on bulk delete: app.db_models.ScanOrder.query.delete()
-#     for item in itertools.chain(session.new, session.dirty, session.deleted):
-#         if not isinstance(item, app.db_models.ScanOrder):
-#             continue
-#         item: app.db_models.ScanOrder
-#         update_scan_order_minimal_for_target(item.target_id)
-
-
 def update_scan_order_minimal_for_target(target_id: int) -> Optional[int]:
     logger.info(f"Updating minimal scan order for target_id: {target_id}")
     res = db.session.query(func.min(app.db_models.ScanOrder.periodicity)) \
@@ -167,7 +156,6 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size):
 
         if original_size == new_size:
             break  # there are apparently no new targets
-            # todo: edge case when DNS resolving fails for all new targets?
     # todo: make sure that targets_e is deduplicated
 
     logger.info(f"Batch (size {len(targets_e)} with soft max {SchedulerConfig.batch_size}): {targets_e}")
