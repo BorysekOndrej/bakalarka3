@@ -39,8 +39,14 @@ def create_app():
         db.create_all()
         logger.info("After DB create")
 
-        from routes import bp as basic_routes
-        app.register_blueprint(basic_routes)
+        from views.apiV1 import bp as api_v1
+        app.register_blueprint(api_v1, url_prefix='/api/v1')
+
+        from views.apiDebug import bp as api_debug
+        app.register_blueprint(api_debug, url_prefix='/api/debug')
+
+        from views.other import bp as other_routes
+        app.register_blueprint(other_routes, url_prefix='/')
 
         return app
 
