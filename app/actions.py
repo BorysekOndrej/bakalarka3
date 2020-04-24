@@ -1,6 +1,6 @@
 from typing import Optional
 
-from app import app, db_models, logger, db_schemas
+from app import db_models, logger, db_schemas
 import db_utils
 
 
