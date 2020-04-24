@@ -5,8 +5,8 @@ from sqlalchemy import func
 import app
 import app.db_models
 from config import SchedulerConfig
-import dns_utils
-import db_utils
+import app.utils.db_utils as db_utils
+import app.utils.dns_utils as dns_utils
 
 logger = app.logger
 

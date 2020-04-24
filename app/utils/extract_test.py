@@ -2,7 +2,7 @@ import json
 
 import app.db_models
 import app.db_schemas
-import files
+import app.utils.files as files
 
 
 def test_extract_from_db():

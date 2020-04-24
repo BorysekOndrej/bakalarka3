@@ -1,6 +1,6 @@
 import json
 from loguru import logger
-from utils.files import *
+from app.utils.files import *
 
 
 def normalize_file(filename: str):

@@ -10,12 +10,12 @@ from flask import request, jsonify
 
 import flask_jwt_extended
 
-import db_utils
-import scan_scheduler
+import app.utils.db_utils as db_utils
+import app.scan_scheduler as scan_scheduler
 from app import db_models, logger
-import db_schemas
-import authentication_utils
-import actions
+import app.db_schemas as db_schemas
+import app.utils.authentication_utils as authentication_utils
+import app.actions as actions
 # from config import FlaskConfig
 
 

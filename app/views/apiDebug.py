@@ -10,16 +10,16 @@ from flask import request, jsonify
 
 import flask_jwt_extended
 
-import db_utils
-import sslyze_parse_result
-import scan_scheduler
+import app.utils.db_utils as db_utils
+import app.utils.sslyze_parse_result as sslyze_parse_result
+import app.scan_scheduler as scan_scheduler
 from app import db_models, logger
-import dns_utils
-import ct_search
-import sslyze_scanner
-import extract_test
-import authentication_utils
-import normalize_jsons
+import app.utils.dns_utils as dns_utils
+import app.utils.ct_search as ct_search
+import app.utils.sslyze_scanner as sslyze_scanner
+import app.utils.extract_test as extract_test
+import app.utils.authentication_utils as authentication_utils
+import app.utils.normalize_jsons as normalize_jsons
 
 
 @bp.route('/sslyze_get_direct_scan/<string:domain>')

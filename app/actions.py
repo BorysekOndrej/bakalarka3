@@ -1,7 +1,7 @@
 from typing import Optional
 
 from app import db_models, logger, db_schemas
-import db_utils
+import app.utils.db_utils as db_utils
 
 
 def generic_get_create_edit_from_data(schema: db_schemas.SQLAlchemyAutoSchema, data: dict, transient_only=False,

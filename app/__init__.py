@@ -21,32 +21,32 @@ def create_app():
     logger.add(config.LogConfig.log_folder + "{time}.log", backtrace=True, diagnose=True, level='DEBUG')
     logger.info('New instance of app.')
 
-    app = Flask(__name__, instance_relative_config=True)
-    app.config.from_object(config.FlaskConfig)
+    app_new = Flask(__name__, instance_relative_config=True)
+    app_new.config.from_object(config.FlaskConfig)
 
-    db.init_app(app)
-    ma.init_app(app)
-    jwt.init_app(app)
-    cors.init_app(app)
+    db.init_app(app_new)
+    ma.init_app(app_new)
+    jwt.init_app(app_new)
+    cors.init_app(app_new)
 
-    with app.app_context():
+    with app_new.app_context():
+        from app.views.apiV1 import bp as api_v1
+        app_new.register_blueprint(api_v1, url_prefix='/api/v1')
 
-        import logging_intercept
+        from app.views.apiDebug import bp as api_debug
+        app_new.register_blueprint(api_debug, url_prefix='/api/debug')
 
-        from app import db_models
-        from app import scan_scheduler
+        from app.views.other import bp as other_routes
+        app_new.register_blueprint(other_routes, url_prefix='/')
+
+        import app.utils.logging_intercept
+        # from app import db_models
+        # from app import scan_scheduler
+        # import app.db_models as db_models
+        # import app.scan_scheduler as scan_scheduler
         logger.info("Before DB create")
-        db.create_all()
+        # db.create_all()
         logger.info("After DB create")
 
-        from views.apiV1 import bp as api_v1
-        app.register_blueprint(api_v1, url_prefix='/api/v1')
-
-        from views.apiDebug import bp as api_debug
-        app.register_blueprint(api_debug, url_prefix='/api/debug')
-
-        from views.other import bp as other_routes
-        app.register_blueprint(other_routes, url_prefix='/')
-
-        return app
+        return app_new
 

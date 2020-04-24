@@ -8,9 +8,9 @@ from sqlalchemy.exc import IntegrityError
 import json
 import datetime
 
-import certificate
-import db_utils
-import files
+import app.utils.certificate as certificate
+import app.utils.db_utils as db_utils
+import app.utils.files as files
 
 still_to_parse_test = True
 

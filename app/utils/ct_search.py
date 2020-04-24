@@ -3,7 +3,7 @@ import requests
 from typing import List, Dict
 from loguru import logger
 from config import ImportConfig
-from utils.files import write_to_file
+from app.utils.files import write_to_file
 
 """
 # Usage example
