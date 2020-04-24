@@ -17,7 +17,7 @@ coverage==5.0.4
 cryptography==2.9
 dataclasses==0.6
 DataProperty==0.47.0
-dnspython==1.16.0
+dnspython==1.15.0
 docopt==0.6.2
 docutils==0.15.2
 Flask==1.1.2
@@ -66,6 +66,7 @@ python-mimeparse==1.6.0
 pytz==2019.3
 PyYAML==5.3.1
 requests==2.23.0
+requests-toolbelt==0.9.1
 s3transfer==0.3.3
 six==1.14.0
 soupsieve==2.0
