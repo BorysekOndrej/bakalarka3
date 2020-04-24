@@ -2,7 +2,8 @@ import json
 
 import app.db_models
 import app.db_schemas
-import utils.files
+import files
+
 
 def test_extract_from_db():
     cls_name = "ScanResults"  # security: cls_name MUST NOT be dynamically assigned to
@@ -13,5 +14,5 @@ def test_extract_from_db():
     json_dict = schema.dump(res)
 
     json_string = json.dumps(json_dict, indent=3)
-    utils.files.write_to_file(f"tmp/from_db_marshmallow_{cls_name}.json", json_string)
+    files.write_to_file(f"tmp/from_db_marshmallow_{cls_name}.json", json_string)
     return json_string

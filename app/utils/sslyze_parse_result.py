@@ -8,9 +8,9 @@ from sqlalchemy.exc import IntegrityError
 import json
 import datetime
 
-import utils.certificate
-import utils.db_utils
-import utils.files
+import certificate
+import db_utils
+import files
 
 still_to_parse_test = True
 
@@ -83,7 +83,7 @@ def parse_cipher_suite(scan_result, plugin_title):
                     scan_result["results"][plugin_title][plugin_field]) == 0:
                 scan_result["results"][plugin_title].pop(plugin_field, None)
 
-    res = utils.db_utils.get_one_or_create_from_object(res)
+    res = db_utils.get_one_or_create_from_object(res)
     return res[0].id
 
 
@@ -94,7 +94,7 @@ def parse_server_info(scan_result):
     res = app.db_models.ServerInfo(hostname=server_info_part["hostname"], port=server_info_part["port"],
                                    ip_address=server_info_part["ip_address"],
                                    openssl_cipher_string_supported_id=cipher_res_id)
-    res = utils.db_utils.get_one_or_create_from_object(res)
+    res = db_utils.get_one_or_create_from_object(res)
 
     if still_to_parse_test:
         scan_result.pop("server_info")
@@ -112,7 +112,7 @@ def parse_certificate_chain(obj):
 
 
 def parse_single_ocsp_response(obj):
-    crt_obj = utils.db_utils.dict_filter_to_class_variables(app.db_models.OCSPResponseSingle, obj)
+    crt_obj = db_utils.dict_filter_to_class_variables(app.db_models.OCSPResponseSingle, obj)
 
     crt_obj["certID_hashAlgorithm"] = obj["certID"]["hashAlgorithm"]
     crt_obj["certID_issuerNameHash"] = obj["certID"]["issuerNameHash"]
@@ -122,7 +122,7 @@ def parse_single_ocsp_response(obj):
     crt_obj["thisUpdate"] = datetime.datetime.strptime(obj["thisUpdate"], '%b %d %H:%M:%S %Y %Z')
     crt_obj["nextUpdate"] = datetime.datetime.strptime(obj["nextUpdate"], '%b %d %H:%M:%S %Y %Z')
 
-    res = utils.db_utils.get_one_or_create(app.db_models.OCSPResponseSingle, **crt_obj)
+    res = db_utils.get_one_or_create(app.db_models.OCSPResponseSingle, **crt_obj)
     return res[0].id
 
 
@@ -134,7 +134,7 @@ def parse_certificate_information_ocsp_response(obj):
     obj["producedAt"] = datetime.datetime.strptime(obj["producedAt"], '%b %d %H:%M:%S %Y %Z')
     obj["responses_list"] = ",".join(str(x) for x in obj["responses_list"])
 
-    crt_obj = utils.db_utils.dict_filter_to_class_variables(app.db_models.OCSPResponse, obj)
+    crt_obj = db_utils.dict_filter_to_class_variables(app.db_models.OCSPResponse, obj)
     res = app.db_models.OCSPResponse.from_kwargs(crt_obj)
 
     if still_to_parse_test:
@@ -171,14 +171,14 @@ def parse_certificate_information(scan_result, plugin_title):
         tmp_validated_path_ids.append(str(new_id))
     current_plugin["path_validation_result_list"] = ", ".join(tmp_validated_path_ids)
     current_plugin.pop("validated_paths_list")
-    prep_obj = utils.db_utils.dict_filter_to_class_variables(app.db_models.CertificateInformation, current_plugin)
+    prep_obj = db_utils.dict_filter_to_class_variables(app.db_models.CertificateInformation, current_plugin)
     # prep_obj["path_validation_error_list"] = ",".join(prep_obj["path_validation_error_list"])
 
     prep_obj.pop("ocsp_response")
     prep_obj.pop("path_validation_error_list")
     # prep_obj.pop("path_validation_result_list") # todo
 
-    res = utils.db_utils.get_one_or_create(app.db_models.CertificateInformation, **prep_obj)
+    res = db_utils.get_one_or_create(app.db_models.CertificateInformation, **prep_obj)
 
     # logger.error([x for x in current_plugin.keys() if "certificate_chain" in x])
     if still_to_parse_test:
@@ -193,9 +193,9 @@ def parse_certificate_information(scan_result, plugin_title):
 
 def parse_certificate(obj):
     try:
-        crt_obj = utils.db_utils.dict_filter_to_class_variables(app.db_models.Certificate, obj)
-        crt_obj["thumbprint_sha1"] = utils.certificate.certificate_thumbprint(crt_obj["as_pem"], "sha1")
-        crt_obj["thumbprint_sha256"] = utils.certificate.certificate_thumbprint(crt_obj["as_pem"], "sha256")
+        crt_obj = db_utils.dict_filter_to_class_variables(app.db_models.Certificate, obj)
+        crt_obj["thumbprint_sha1"] = certificate.certificate_thumbprint(crt_obj["as_pem"], "sha1")
+        crt_obj["thumbprint_sha256"] = certificate.certificate_thumbprint(crt_obj["as_pem"], "sha256")
 
         crt_obj["publicKey_algorithm"] = obj["publicKey"]["algorithm"]
         crt_obj["publicKey_size"] = obj["publicKey"]["size"]
@@ -210,7 +210,7 @@ def parse_certificate(obj):
         logger.exception(e)
         logger.error(obj)
 
-    res = utils.db_utils.get_one_or_create(app.db_models.Certificate, **crt_obj)
+    res = db_utils.get_one_or_create(app.db_models.Certificate, **crt_obj)
     return res[0].id
 
 
@@ -218,12 +218,12 @@ def parse_http_security_headers(scan_result, plugin_title):
     current_plugin = scan_result["results"][plugin_title]
     current_plugin["verified_certificate_chain_list_id"] = parse_certificate_chain(current_plugin[
                                                                                        "verified_certificate_chain"])
-    prep_obj = utils.db_utils.dict_filter_to_class_variables(app.db_models.Certificate, current_plugin)
+    prep_obj = db_utils.dict_filter_to_class_variables(app.db_models.Certificate, current_plugin)
     prep_obj["expect_ct_header_max_age"] = current_plugin["expect_ct_header"]["max_age"]
     prep_obj["expect_ct_header_report_uri"] = current_plugin["expect_ct_header"]["report_uri"]
     prep_obj["expect_ct_header_enforce"] = current_plugin["expect_ct_header"]["enforce"]
 
-    res = utils.db_utils.get_one_or_create(app.db_models.HTTPSecurityHeaders, **prep_obj)
+    res = db_utils.get_one_or_create(app.db_models.HTTPSecurityHeaders, **prep_obj)
 
     if still_to_parse_test:
         current_plugin.pop("verified_certificate_chain")
@@ -235,7 +235,7 @@ def parse_http_security_headers(scan_result, plugin_title):
 def parse_tls12_session_resumption(class_type, scan_result, plugin_title):
     current_plugin = scan_result["results"][plugin_title]
     current_plugin["errored_resumptions_list"] = ",".join(current_plugin["errored_resumptions_list"])
-    kwargs = utils.db_utils.dict_filter_to_class_variables(class_type, current_plugin)
+    kwargs = db_utils.dict_filter_to_class_variables(class_type, current_plugin)
     res = class_type.from_kwargs(kwargs)
     if still_to_parse_test:
         scan_result["results"].pop(plugin_title)
@@ -253,7 +253,7 @@ def parse_general(class_type, scan_result, plugin_title):
 @logger.catch
 def run():
     # basic_db_fill_test(session)
-    scan_result_string = utils.files.read_from_file("../tmp/test_copy.out.json")
+    scan_result_string = files.read_from_file("../tmp/test_copy.out.json")
     scan_result = json.loads(scan_result_string)
 
     obj = app.db_models.ScanResults()
@@ -313,7 +313,7 @@ def run():
         # this expects Ciphers Suites to be parsed
         obj.server_info_id = parse_server_info(scan_result)
 
-    utils.db_utils.get_one_or_create_from_object(obj)
+    db_utils.get_one_or_create_from_object(obj)
 
     if still_to_parse_test:
         to_remove = []
@@ -322,4 +322,4 @@ def run():
                 to_remove.append(plugin_title)
         for plugin_title in to_remove:
             scan_result["results"].pop(plugin_title, None)
-        utils.files.write_to_file("../tmp/still_to_parse.out.json", json.dumps(scan_result, indent=3))
+        files.write_to_file("../tmp/still_to_parse.out.json", json.dumps(scan_result, indent=3))

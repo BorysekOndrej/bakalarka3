@@ -9,7 +9,7 @@ from sqlalchemy.types import TypeDecorator
 from typing import Optional
 
 import app
-import utils.db_utils
+import db_utils
 from sslyze.ssl_settings import TlsWrappedProtocolEnum
 
 from config import SchedulerConfig
@@ -41,7 +41,7 @@ class UniqueModel(object):
     def from_kwargs(cls, obj) -> Optional[int]:
         if obj is None:
             return None
-        res, returned_from_select = utils.db_utils.get_one_or_create(cls, **obj)
+        res, returned_from_select = db_utils.get_one_or_create(cls, **obj)
         return res.id
 
     @classmethod
@@ -49,7 +49,7 @@ class UniqueModel(object):
     def select_from_list(cls, id_stringlist: str):
         if id_stringlist is None:
             return []
-        stringlist_as_tuple = utils.db_utils.split_array_to_tuple(id_stringlist)
+        stringlist_as_tuple = db_utils.split_array_to_tuple(id_stringlist)
         res = db.session \
             .query(cls) \
             .filter(cls.id.in_(stringlist_as_tuple)) \

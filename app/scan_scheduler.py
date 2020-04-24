@@ -5,7 +5,7 @@ from sqlalchemy import func
 import app
 import app.db_models
 from config import SchedulerConfig
-import utils.dns_utils
+import dns_utils
 import db_utils
 
 logger = app.logger
@@ -138,7 +138,7 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size):
                 targets_e.add(new_target_with_extra)
                 continue
 
-            ips = utils.dns_utils.get_ips_for_domain(single_target.hostname)
+            ips = dns_utils.get_ips_for_domain(single_target.hostname)
 
             if len(ips) == 0:
 

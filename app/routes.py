@@ -21,8 +21,7 @@ import sslyze_scanner
 import extract_test
 import db_schemas
 import authentication_utils
-from authentication_utils import check_if_token_in_blacklist
-import utils.normalize_jsons
+import normalize_jsons
 import actions
 # from config import FlaskConfig
 
@@ -333,7 +332,7 @@ def scenario1():
 @bp.route('/api/debug/normalizeJsons', methods=['GET'])
 def scenario2():
     try:
-        utils.normalize_jsons.run()
+        normalize_jsons.run()
     finally:
         pass
     return "done"
@@ -360,7 +359,6 @@ def debugSetAccessCookie():
 
 @bp.route('/api/debug/cors', methods=['GET'])
 def cors1():
-    from flask_cors import CORS
     return "done", 200
 
 

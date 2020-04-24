@@ -39,7 +39,6 @@ def create_app():
         db.create_all()
         logger.info("After DB create")
 
-        # from . import routes
         from routes import bp as basic_routes
         app.register_blueprint(basic_routes)
 
