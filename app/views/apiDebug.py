@@ -2,11 +2,16 @@ import datetime
 import json
 import random
 
+import redis
 from flask import Blueprint
+from config import FlaskConfig
+import app.utils.redis_test_worker as redis_test_worker
+
 bp = Blueprint('apiDebug', __name__)
 
 
-from flask import request, jsonify
+from flask import request, jsonify, current_app
+import rq
 
 import flask_jwt_extended
 
@@ -42,6 +47,46 @@ def debug_sslyze_batch_direct_scan():
     for x in res:
         answers.append(json.loads(x))
     return json.dumps(answers, indent=3)
+
+
+@bp.route('/sslyze_batch_scan_enqueue_reddis', methods=['POST'])
+def debug_sslyze_batch_scan_enqueue_reddis():
+    if not FlaskConfig.REDIS_ENABLED:
+        return "Reddis support is not enabled in config", 500
+    # logger.warning(request.data)
+    data = json.loads(request.data)
+    twe = []
+    for x in data.get("targets", []):
+        ntwe = db_models.TargetWithExtra(db_models.Target.from_repr_to_transient(x))
+        twe.append(ntwe)
+    ntwe_json_list = [x.json_repr() for x in twe]
+
+    return redis_test_worker.reddis_sslyze_scan_domains_to_json(json.dumps(ntwe_json_list))
+    # todo: remove the above debug
+
+    queue: rq.queue = current_app.sslyze_task_queue
+    job: rq.job = queue.enqueue('app.utils.redis_test_worker.reddis_sslyze_scan_domains_to_json',
+                                json.dumps(ntwe_json_list))
+    return job.get_id(), 200
+
+
+@bp.route('/sslyze_batch_scan_result_reddis/<string:job_id>', methods=['GET'])
+def debug_sslyze_batch_scan_result_reddis(job_id):
+    if not FlaskConfig.REDIS_ENABLED:
+        return "Reddis support is not enabled in config", 500
+
+    try:
+        queue: rq.queue = current_app.sslyze_task_queue
+        job = queue.fetch_job(job_id)
+    except (redis.exceptions.RedisError, rq.exceptions.NoSuchJobError):
+        return "Reddis error", 500
+
+    return jsonify({
+        'id': job.get_id(),
+        'status': job.is_finished,
+        'meta': job.meta,
+        'result': job.result
+    })
 
 
 @bp.route('/dns_resolve_domain/<string:domain>')

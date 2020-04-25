@@ -7,6 +7,11 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import config
 
+if config.FlaskConfig.REDIS_ENABLED:
+    from redis import Redis
+    import rq
+
+
 db = SQLAlchemy()
 ma = Marshmallow()
 
@@ -23,6 +28,10 @@ def create_app():
 
     app_new = Flask(__name__, instance_relative_config=True)
     app_new.config.from_object(config.FlaskConfig)
+
+    if config.FlaskConfig.REDIS_ENABLED:
+        app_new.redis = Redis.from_url(config.FlaskConfig.REDIS_URL)
+        app_new.sslyze_task_queue = rq.Queue('sslyze-tasks', connection=app_new.redis)
 
     db.init_app(app_new)
     ma.init_app(app_new)

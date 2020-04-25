@@ -40,6 +40,9 @@ class FlaskConfig(object):
 
     # JWT_SESSION_COOKIE = True
 
+    REDIS_ENABLED = True
+    REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
+
 
 class DnsConfig(object):
     nameservers = ['8.8.8.8', '1.1.1.1']
