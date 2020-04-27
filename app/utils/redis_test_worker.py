@@ -1,18 +1,17 @@
 import json
+from typing import List
 from rq import get_current_job
 
 import app.object_models as object_models
 import app.utils.sslyze_scanner as sslyze_scanner
-import app.actions as actions
-import app.db_schemas as db_schemas
 
 
-def load_json_to_targets_with_extra(json_string):
-    data = json.loads(json_string)
+def load_json_to_targets_with_extra(json_string: str) -> List[object_models.TargetWithExtra]:
+    data_arr = json.loads(json_string)
     twe = []
-    for x in data:
-        a = object_models.TargetWithExtra.from_dict(x)
-        twe.append(a)
+    for single_twe_dict in data_arr:
+        single_twe_obj = object_models.TargetWithExtra.from_dict(single_twe_dict)
+        twe.append(single_twe_obj)
     return twe
 
 

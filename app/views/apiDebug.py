@@ -55,19 +55,15 @@ def debug_sslyze_batch_direct_scan():
 def debug_sslyze_batch_scan_enqueue_reddis():
     if not FlaskConfig.REDIS_ENABLED:
         return "Reddis support is not enabled in config", 500
-    # future:   At this point I don't have access to DB (this can be run on sensor), so I can't really validate.
-    #           The best I could do is at least validate existence of attributes, but without connection to DB or
-    #           duplication of target model that would be tricky.
+    # At this point I don't have access to DB (this can be run on sensor), so I can't really fully validate.
 
     twe = redis_test_worker.load_json_to_targets_with_extra(request.data)
-    ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)  # todo: TargetWithExtra init
-    logger.warning(ntwe_json_list)
-    return redis_test_worker.reddis_sslyze_scan_domains_to_json(json.dumps(ntwe_json_list))
-    # todo: remove the above debug
+    ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
+    ntwe_json_string = json.dumps(ntwe_json_list)
 
     queue: rq.queue = current_app.sslyze_task_queue
-    job: rq.job = queue.enqueue('app.utils.redis_test_worker.reddis_sslyze_scan_domains_to_json',
-                                json.dumps(ntwe_json_list))
+    job: rq.job = queue.enqueue('app.utils.redis_test_worker.reddis_sslyze_scan_domains_to_json', ntwe_json_string)
+
     return job.get_id(), 200
 
 
