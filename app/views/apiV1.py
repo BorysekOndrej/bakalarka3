@@ -263,8 +263,8 @@ def api_sslyze_scan_targets():
 
         import sslyze_background_redis
         return jsonify({'results_attached': False,
-                        'backgroud_job_id': sslyze_background_redis.reddis_sslyze_enqueu(current_app,
-                                                                                         ntwe_json_string)}), 200
+                        'backgroud_job_id': sslyze_background_redis.redis_sslyze_enqueu(current_app,
+                                                                                        ntwe_json_string)}), 200
 
     return jsonify({'results_attached': True,
                     'results': sslyze_scanner.scan_domains_to_json(twe)}), 200

@@ -2,17 +2,13 @@ import datetime
 import json
 import random
 
-import redis
 from flask import Blueprint
 from config import FlaskConfig
-import app.utils.sslyze_background_redis as redis_test_worker
-import app.db_schemas as db_schemas
 
 bp = Blueprint('apiDebug', __name__)
 
 
 from flask import request, jsonify, current_app
-import rq
 
 import flask_jwt_extended
 
@@ -51,32 +47,27 @@ def debug_sslyze_batch_direct_scan():
     return json.dumps(answers, indent=3)
 
 
-@bp.route('/sslyze_batch_scan_enqueue_reddis', methods=['POST'])
-def debug_sslyze_batch_scan_enqueue_reddis():
+@bp.route('/sslyze_batch_scan_enqueue_redis', methods=['POST'])
+def debug_sslyze_batch_scan_enqueue_redis():
     if not FlaskConfig.REDIS_ENABLED:
-        return "Reddis support is not enabled in config", 500
-    # At this point I don't have access to DB (this can be run on sensor), so I can't really fully validate.
+        return "Redis support is not enabled in config", 500
+    import app.utils.sslyze_background_redis as sslyze_background_redis
 
+    # At this point I don't have access to DB (this can be run on sensor), so I can't really fully validate.
     twe = object_models.load_json_to_targets_with_extra(request.data)
     ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
     ntwe_json_string = json.dumps(ntwe_json_list)
 
-    queue: rq.queue = current_app.sslyze_task_queue
-    job: rq.job = queue.enqueue('app.utils.redis_test_worker.reddis_sslyze_scan_domains_to_json', ntwe_json_string)
-
-    return job.get_id(), 200
+    return sslyze_background_redis.redis_sslyze_enqueu(current_app, ntwe_json_string), 200
 
 
-@bp.route('/sslyze_batch_scan_result_reddis/<string:job_id>', methods=['GET'])
-def debug_sslyze_batch_scan_result_reddis(job_id):
+@bp.route('/sslyze_batch_scan_result_redis/<string:job_id>', methods=['GET'])
+def debug_sslyze_batch_scan_result_redis(job_id):
     if not FlaskConfig.REDIS_ENABLED:
-        return "Reddis support is not enabled in config", 500
+        return "Redis support is not enabled in config", 500
+    import app.utils.sslyze_background_redis as sslyze_background_redis
 
-    try:
-        queue: rq.queue = current_app.sslyze_task_queue
-        job = queue.fetch_job(job_id)
-    except (redis.exceptions.RedisError, rq.exceptions.NoSuchJobError):
-        return "Reddis error", 500
+    job = sslyze_background_redis.redis_sslyze_fetch_job(current_app, job_id)
 
     return jsonify({
         'id': job.get_id(),
