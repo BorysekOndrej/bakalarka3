@@ -67,13 +67,13 @@ def debug_sslyze_batch_scan_result_redis(job_id):
         return "Redis support is not enabled in config", 500
     import app.utils.sslyze_background_redis as sslyze_background_redis
 
-    job = sslyze_background_redis.redis_sslyze_fetch_job(current_app, job_id)
+    job = sslyze_background_redis.redis_sslyze_fetch_job(job_id)
 
     return jsonify({
         'id': job.get_id(),
         'status': job.is_finished,
         'meta': job.meta,
-        'result': job.result
+        'result': json.loads(job.result)
     })
 
 
