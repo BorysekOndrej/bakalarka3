@@ -34,6 +34,7 @@ def debug_sslyze_get_direct_scan(domain):
 
 @bp.route('/sslyze_batch_direct_scan', methods=['POST'])
 def debug_sslyze_batch_direct_scan():
+    # todo: DEPRECATED
     # logger.warning(request.data)
     data = json.loads(request.data)
     twe = []
@@ -49,6 +50,7 @@ def debug_sslyze_batch_direct_scan():
 
 @bp.route('/sslyze_batch_scan_enqueue_redis', methods=['POST'])
 def debug_sslyze_batch_scan_enqueue_redis():
+    # todo: DEPRECATED
     if not FlaskConfig.REDIS_ENABLED:
         return "Redis support is not enabled in config", 500
     import app.utils.sslyze_background_redis as sslyze_background_redis

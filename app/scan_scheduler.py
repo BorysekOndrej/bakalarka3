@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy import func
 
 import app
@@ -117,7 +117,12 @@ def backdate_enqueued_targets():
     return len(new_ids)
 
 
-def get_batch_to_scan(limit_n=SchedulerConfig.batch_size):
+def get_batch_to_scan_json(limit_n=SchedulerConfig.batch_size) -> List[dict]:
+    targets_e = get_batch_to_scan(limit_n)
+    return [x.json_repr() for x in targets_e]
+
+
+def get_batch_to_scan(limit_n=SchedulerConfig.batch_size) -> List[object_models.TargetWithExtra]:
     targets_e = set()
     while len(targets_e) < limit_n:
         original_size = len(targets_e)
@@ -162,4 +167,4 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size):
 
     logger.info(f"Batch (size {len(targets_e)} with soft max {SchedulerConfig.batch_size}): {targets_e}")
 
-    return [x.json_repr() for x in targets_e]
+    return targets_e
