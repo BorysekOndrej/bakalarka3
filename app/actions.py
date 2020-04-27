@@ -1,34 +1,11 @@
 from typing import Optional
 
-from app import db_models, logger, db_schemas
-import app.utils.db_utils as db_utils
-
-
-def generic_get_create_edit_from_data(schema: db_schemas.SQLAlchemyAutoSchema, data: dict, transient_only=False,
-                                      get_only=False) -> Optional[db_models.Base]:
-    # Warning: Unless get_only=True, this function overwrites attributes in DB to default used in schema load,
-    # if the attributes are not specified in data.
-    schema_instance = schema()
-    res_transient = schema_instance.load(data, transient=True)  # this validates input
-    if transient_only:
-        return res_transient
-    res_dict = schema_instance.dump(res_transient)
-    return db_utils.get_or_create_or_update_by_unique(schema.Meta.model, res_dict, get_only=get_only)
-
-
-def generic_delete_from_data(schema: db_schemas.SQLAlchemyAutoSchema, data: dict) -> db_models.Base:
-    res = generic_get_create_edit_from_data(schema, data, get_only=True)
-    try:
-        db_models.db.session.delete(res)
-        db_models.db.session.commit()
-    except Exception as e:
-        logger.warning(f'Delete failed for model {res}')
-        return False
-    return True
+from app import db_models, db_schemas
+import app.utils.db_utils_advanced as db_utils_advanced
 
 
 def can_user_get_target_definition_by_id(target_id: int, user_id: int):
-    scan_order = generic_get_create_edit_from_data(
+    scan_order = db_utils_advanced.generic_get_create_edit_from_data(
         db_schemas.ScanOrderSchema,
         {"target_id": target_id, "user_id": user_id},
         get_only=True

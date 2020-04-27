@@ -6,9 +6,9 @@ from typing import List
 import marshmallow.fields
 import marshmallow_sqlalchemy.fields
 
-import app.actions as actions
 import app.db_schemas as db_schemas
 import app.db_models as db_models
+import app.utils.db_utils_advanced as db_utils_advanced
 
 
 class TargetWithExtra(object):
@@ -26,9 +26,9 @@ class TargetWithExtra(object):
 
     @staticmethod
     def from_dict(data: dict) -> TargetWithExtra:
-        target = actions.generic_get_create_edit_from_data(db_schemas.TargetSchema,
-                                                           data.get("target_definition", dict()),
-                                                           transient_only=True)
+        target = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.TargetSchema,
+                                                                     data.get("target_definition", dict()),
+                                                                     transient_only=True)
         extra = data.get("extra", dict())
         return TargetWithExtra(target, extra)
 

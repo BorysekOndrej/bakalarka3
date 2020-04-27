@@ -1,12 +1,13 @@
 import enum
 from typing import Tuple, Optional
 
+from loguru import logger
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import NoResultFound
 import app
-import app.db_models
 import copy
 import config
+import app.db_models as db_models
 
 logger = app.logger
 

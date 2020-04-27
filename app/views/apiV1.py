@@ -12,13 +12,15 @@ bp = Blueprint('apiV1', __name__)
 
 import flask
 from flask import request, jsonify
+from loguru import logger
 
 import flask_jwt_extended
 
 import app.utils.db_utils as db_utils
+import app.utils.db_utils_advanced as db_utils_advanced
 import app.scan_scheduler as scan_scheduler
-from app import db_models, logger
 import app.db_schemas as db_schemas
+import app.db_models as db_models
 import app.utils.authentication_utils as authentication_utils
 import app.actions as actions
 # from config import FlaskConfig
@@ -38,7 +40,7 @@ def get_target_id(target_def=None):
         data = json.loads(request.data)
     # logger.warning(data)
     data["protocol"] = data.get("protocol", "HTTPS").replace("TlsWrappedProtocolEnum.", "")  # todo: remove this hack
-    target = actions.generic_get_create_edit_from_data(db_schemas.TargetSchema, data, get_only=True)
+    target = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.TargetSchema, data, get_only=True)
     if not target:
         return "fail", 400
     user_jwt = flask_jwt_extended.get_jwt_identity()
@@ -73,7 +75,7 @@ def api_target_by_id(target_id: int):
         return "Target either doesn't exist or you're allowed to see it.", 400
 
     if request.method == 'DELETE':
-        scan_order: db_models.ScanOrder = actions.generic_get_create_edit_from_data(
+        scan_order: db_models.ScanOrder = db_utils_advanced.generic_get_create_edit_from_data(
             db_schemas.ScanOrderSchema,
             {"target_id": target.id, "user_id": user_id},
             get_only=True
@@ -83,13 +85,13 @@ def api_target_by_id(target_id: int):
         db_utils.actions_on_modification(scan_order)
 
 
-    scan_order = actions.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema,
-                                                           {"target_id": target.id, "user_id": user_id},
-                                                           get_only=True)
+    scan_order = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema,
+                                                                     {"target_id": target.id, "user_id": user_id},
+                                                                     get_only=True)
 
-    notifications = actions.generic_get_create_edit_from_data(db_schemas.NotificationsSchema,
-                                                              {"target_id": target.id, "user_id": user_id},
-                                                              get_only=True)
+    notifications = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.NotificationsSchema,
+                                                                        {"target_id": target.id, "user_id": user_id},
+                                                                        get_only=True)
 
     return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
 
@@ -105,17 +107,17 @@ def api_target():
     data["target"]["protocol"] = data.get("protocol", "HTTPS").replace("TlsWrappedProtocolEnum.",
                                                                        "")  # todo: remove this hack
     data["target"].pop("id", None)
-    target = actions.generic_get_create_edit_from_data(db_schemas.TargetSchema, data["target"])
+    target = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.TargetSchema, data["target"])
 
     if data.get("scanOrder", None):
         scan_order_def = db_utils.merge_dict_with_copy_and_overwrite(data.get("scanOrder", {}),
                                                                      {"target_id": target.id, "user_id": user_id})
-        actions.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema, scan_order_def)
+        db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema, scan_order_def)
 
     if data.get("notifications", None):
         notifications_def = db_utils.merge_dict_with_copy_and_overwrite({"preferences": data.get("notifications", {})},
                                                                         {"target_id": target.id, "user_id": user_id})
-        actions.generic_get_create_edit_from_data(db_schemas.NotificationsSchema, notifications_def)
+        db_utils_advanced.generic_get_create_edit_from_data(db_schemas.NotificationsSchema, notifications_def)
 
     return api_target_by_id(target.id)
 
