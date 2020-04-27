@@ -130,3 +130,5 @@ def scan_domains_to_json(targets: List[object_models.TargetWithExtra]) -> List[s
     for twe in twe_list:
         json_list.append(twe.make_json())
     return json_list
+
+

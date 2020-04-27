@@ -258,15 +258,4 @@ def api_get_user_targets():
 @flask_jwt_extended.jwt_required
 def api_sslyze_scan_targets():
     twe = object_models.load_json_to_targets_with_extra(request.data)
-
-    if FlaskConfig.REDIS_ENABLED:
-        ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
-        ntwe_json_string = json.dumps(ntwe_json_list)
-
-        import sslyze_background_redis
-        return jsonify({'results_attached': False,
-                        'backgroud_job_id': sslyze_background_redis.redis_sslyze_enqueu(current_app,
-                                                                                        ntwe_json_string)}), 200
-
-    return jsonify({'results_attached': True,
-                    'results': sslyze_scanner.scan_domains_to_json(twe)}), 200
+    return jsonify(actions.sslyze_scan(current_app, twe)), 200
