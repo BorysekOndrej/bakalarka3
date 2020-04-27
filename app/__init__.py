@@ -5,6 +5,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
+import rq_dashboard
+
 import config
 
 if config.FlaskConfig.REDIS_ENABLED:
@@ -37,6 +39,9 @@ def create_app():
     ma.init_app(app_new)
     jwt.init_app(app_new)
     cors.init_app(app_new)
+
+    app_new.config.from_object(rq_dashboard.default_settings)
+    app_new.register_blueprint(rq_dashboard.blueprint, url_prefix='/debug/rq_dashboard/')
 
     with app_new.app_context():
         from app.views.apiV1 import bp as api_v1
