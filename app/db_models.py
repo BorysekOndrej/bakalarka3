@@ -137,20 +137,6 @@ class Target(Base, UniqueModel):
         return Target.from_repr_to_transient(repr(self))
 
 
-class TargetWithExtra(object):
-    def __init__(self, target_definition: Target, extra: dict = None):
-        self.target_definition: Target = target_definition
-        self.extra = extra
-        if self.extra is None:
-            self.extra = {}
-
-    def __repr__(self):
-        return f"TargetWithExtra(target={self.target_definition}, extra={self.extra})"
-
-    def json_repr(self):
-        return {"target_definition": repr(self.target_definition), "extra": self.extra}
-
-
 class ScanOrder(Base, UniqueModel):
     __tablename__ = 'scanorders'
     __uniqueColumns__ = ['target_id', 'user_id']

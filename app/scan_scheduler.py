@@ -7,6 +7,7 @@ import app.db_models
 from config import SchedulerConfig
 import app.utils.db_utils as db_utils
 import app.utils.dns_utils as dns_utils
+import app.object_models as object_models
 
 logger = app.logger
 
@@ -134,7 +135,7 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size):
         for single_target in new_targets:
             # single_target: app.db_models.Target
             if single_target.ip_address:
-                new_target_with_extra = app.TargetWithExtra(single_target, {"comes_from_dns": False})
+                new_target_with_extra = object_models.TargetWithExtra(single_target, {"comes_from_dns": False})
                 targets_e.add(new_target_with_extra)
                 continue
 
@@ -150,7 +151,7 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size):
                 new_target = single_target.make_copy()
                 ip_type, ip_addr = ip
                 new_target.ip_address = ip_addr
-                new_target_with_extra = app.db_models.TargetWithExtra(new_target, {"comes_from_dns": True})
+                new_target_with_extra = object_models.TargetWithExtra(new_target, {"comes_from_dns": True})
                 targets_e.add(new_target_with_extra)
 
         new_size = len(targets_e)

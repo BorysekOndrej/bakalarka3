@@ -6,6 +6,7 @@ import redis
 from flask import Blueprint
 from config import FlaskConfig
 import app.utils.redis_test_worker as redis_test_worker
+import app.db_schemas as db_schemas
 
 bp = Blueprint('apiDebug', __name__)
 
@@ -25,11 +26,12 @@ import app.utils.sslyze_scanner as sslyze_scanner
 import app.utils.extract_test as extract_test
 import app.utils.authentication_utils as authentication_utils
 import app.utils.normalize_jsons as normalize_jsons
+import app.object_models as object_models
 
 
 @bp.route('/sslyze_get_direct_scan/<string:domain>')
 def debug_sslyze_get_direct_scan(domain):
-    ntwe = db_models.TargetWithExtra(db_models.Target(hostname=domain))
+    ntwe = object_models.TargetWithExtra(db_models.Target(hostname=domain))
     res = sslyze_scanner.scan_to_json(ntwe)
     return res
 
@@ -40,7 +42,7 @@ def debug_sslyze_batch_direct_scan():
     data = json.loads(request.data)
     twe = []
     for x in data.get("targets", []):
-        ntwe = db_models.TargetWithExtra(db_models.Target.from_repr_to_transient(x))
+        ntwe = object_models.TargetWithExtra(db_models.Target.from_repr_to_transient(x))
         twe.append(ntwe)
     res = sslyze_scanner.scan_domains_to_json(twe)
     answers = []
@@ -53,14 +55,13 @@ def debug_sslyze_batch_direct_scan():
 def debug_sslyze_batch_scan_enqueue_reddis():
     if not FlaskConfig.REDIS_ENABLED:
         return "Reddis support is not enabled in config", 500
-    # logger.warning(request.data)
-    data = json.loads(request.data)
-    twe = []
-    for x in data.get("targets", []):
-        ntwe = db_models.TargetWithExtra(db_models.Target.from_repr_to_transient(x))
-        twe.append(ntwe)
-    ntwe_json_list = [x.json_repr() for x in twe]
+    # future:   At this point I don't have access to DB (this can be run on sensor), so I can't really validate.
+    #           The best I could do is at least validate existence of attributes, but without connection to DB or
+    #           duplication of target model that would be tricky.
 
+    twe = redis_test_worker.load_json_to_targets_with_extra(request.data)
+    ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)  # todo: TargetWithExtra init
+    logger.warning(ntwe_json_list)
     return redis_test_worker.reddis_sslyze_scan_domains_to_json(json.dumps(ntwe_json_list))
     # todo: remove the above debug
 

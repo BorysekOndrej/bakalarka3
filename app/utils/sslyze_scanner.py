@@ -11,7 +11,7 @@ from loguru import logger
 from typing import Dict, List
 from config import SslyzeConfig
 
-from app import db_models
+import app.object_models as object_models
 
 connectivity_timeout = 5
 scanner_plugin_network_timeout = 5
@@ -21,9 +21,10 @@ log_folder = 'log'
 class ScanResult:
     def __init__(self, target):
         self.success: bool = False
-        self.target: db_models.TargetWithExtra = target
+        self.target: object_models.TargetWithExtra = target
         self.plugin_results: Dict = {}
         self.server_info = None
+        self.msg = ""
 
     def make_json(self):
         return json.dumps({
@@ -31,7 +32,7 @@ class ScanResult:
             "target": repr(self.target),
             "server_info": self.server_info,
             "results": self.plugin_results,
-
+            "msg": self.msg
         }, indent=3)
 
     def __repr__(self):
@@ -49,7 +50,7 @@ def scan_result_to_dicts(scan_result):
     return server_info, scan_result_dict
 
 
-def scan(targets: List[db_models.TargetWithExtra]) -> List[ScanResult]:
+def scan(targets: List[object_models.TargetWithExtra]) -> List[ScanResult]:
     logger.info(f"New scan initiated with sslyze version {sslyze_version} for target {targets}")
     plugins_repository = PluginsRepository()
     commands = plugins_repository.get_available_commands()
@@ -67,13 +68,17 @@ def scan(targets: List[db_models.TargetWithExtra]) -> List[ScanResult]:
 
             server_info = server_tester.perform(network_timeout=connectivity_timeout)
         except ServerConnectivityError as e:
-            logger.warning(f"Cannot establish connectivity to target {target} with error {e}")
+            error_msg = f"Cannot establish connectivity to target {target} with error {e}"
+            logger.warning(error_msg)
+            domain_result.msg += error_msg + '\n'
             domain_results.append(domain_result)
-            break
+            continue
         except Exception as e:
-            logger.warning(f"Unknown exception in establishing connection to target {target} with error {e}")
+            error_msg = f"Unknown exception in establishing connection to target {target} with error {e}"
+            logger.warning(error_msg)
+            domain_result.msg += error_msg + '\n'
             domain_results.append(domain_result)
-            break
+            continue
 
         scan_results = set()
 
@@ -94,11 +99,14 @@ def scan(targets: List[db_models.TargetWithExtra]) -> List[ScanResult]:
                 scan_results.add(scan_result)
 
         for scan_result in scan_results:
+            scan_command_title = scan_result.scan_command.get_title()
+
             if isinstance(scan_result, PluginRaisedExceptionScanResult):
-                logger.warning(f"Scan command failed: {target}, {scan_result.as_text()}")
+                error_msg = f"Scan command failed: {target}, {scan_result.as_text()}"
+                domain_result.msg += error_msg + '\n'
+                logger.warning(error_msg)
                 continue
 
-            scan_command_title = scan_result.scan_command.get_title()
             scan_result_dicts = scan_result_to_dicts(scan_result)
             domain_result.plugin_results[scan_command_title] = scan_result_dicts[1]
             domain_result.server_info = scan_result_dicts[0]
@@ -108,15 +116,15 @@ def scan(targets: List[db_models.TargetWithExtra]) -> List[ScanResult]:
     return domain_results
 
 
-def scan_domain(target: db_models.TargetWithExtra) -> ScanResult:
+def scan_domain(target: object_models.TargetWithExtra) -> ScanResult:
     return scan([target])[0]
 
 
-def scan_domain_to_json(target: db_models.TargetWithExtra) -> str:
+def scan_domain_to_json(target: object_models.TargetWithExtra) -> str:
     return scan_domain(target).make_json()
 
 
-def scan_domains_to_json(targets: List[db_models.TargetWithExtra]) -> List[str]:
+def scan_domains_to_json(targets: List[object_models.TargetWithExtra]) -> List[str]:
     twe_list = scan(targets)
     json_list = []
     for twe in twe_list:
