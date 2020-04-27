@@ -117,9 +117,10 @@ def backdate_enqueued_targets():
     return len(new_ids)
 
 
-def get_batch_to_scan_json(limit_n=SchedulerConfig.batch_size) -> List[dict]:
-    targets_e = get_batch_to_scan(limit_n)
-    return [x.json_repr() for x in targets_e]
+def convert_batch_to_scan_to_list_of_dicts(twe: List[object_models.TargetWithExtra]=None) -> List[dict]:
+    if twe is None:
+        twe = []
+    return [x.json_repr() for x in twe]
 
 
 def get_batch_to_scan(limit_n=SchedulerConfig.batch_size) -> List[object_models.TargetWithExtra]:

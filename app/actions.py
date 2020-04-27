@@ -1,6 +1,7 @@
 import json
 from typing import Optional, List
 
+import scan_scheduler
 from app import db_models, db_schemas
 import app.object_models as object_models
 import app.utils.db_utils_advanced as db_utils_advanced
@@ -51,3 +52,8 @@ def sslyze_scan(twe: List[object_models.TargetWithExtra]):
 
     return {'results_attached': True,
             'results': sslyze_scanner.scan_domains_to_json(twe)}
+
+
+def sslyze_enqueue_waiting_scans():
+    twe = scan_scheduler.get_batch_to_scan()
+    sslyze_scan(twe)

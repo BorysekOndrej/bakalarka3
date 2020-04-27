@@ -28,7 +28,7 @@ import app.actions as actions
 
 @bp.route('/get_next_targets_batch')
 def api_get_next_targets_batch():
-    return jsonify(scan_scheduler.get_batch_to_scan_json())
+    return jsonify(scan_scheduler.convert_batch_to_scan_to_list_of_dicts(scan_scheduler.get_batch_to_scan()))
 
 
 @bp.route('/get_target_id_from_definition', methods=['POST'])
