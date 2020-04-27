@@ -40,14 +40,14 @@ def get_target_from_id_if_user_can_see(target_id: int, user_id: int) -> Optional
     return get_target_from_id(target_id)
 
 
-def sslyze_scan(current_app, twe: List[object_models.TargetWithExtra]):
+def sslyze_scan(twe: List[object_models.TargetWithExtra]):
     if FlaskConfig.REDIS_ENABLED:
         ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
         ntwe_json_string = json.dumps(ntwe_json_list)
 
         import app.utils.sslyze_background_redis as sslyze_background_redis
         return {'results_attached': False,
-                'backgroud_job_id': sslyze_background_redis.redis_sslyze_enqueu(current_app, ntwe_json_string)}
+                'backgroud_job_id': sslyze_background_redis.redis_sslyze_enqueu(ntwe_json_string)}
 
     return {'results_attached': True,
             'results': sslyze_scanner.scan_domains_to_json(twe)}

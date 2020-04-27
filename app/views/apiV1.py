@@ -258,4 +258,4 @@ def api_get_user_targets():
 @flask_jwt_extended.jwt_required
 def api_sslyze_scan_targets():
     twe = object_models.load_json_to_targets_with_extra(request.data)
-    return jsonify(actions.sslyze_scan(current_app, twe)), 200
+    return jsonify(actions.sslyze_scan(twe)), 200

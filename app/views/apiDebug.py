@@ -58,7 +58,7 @@ def debug_sslyze_batch_scan_enqueue_redis():
     ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
     ntwe_json_string = json.dumps(ntwe_json_list)
 
-    return sslyze_background_redis.redis_sslyze_enqueu(current_app, ntwe_json_string), 200
+    return sslyze_background_redis.redis_sslyze_enqueu(ntwe_json_string), 200
 
 
 @bp.route('/sslyze_batch_scan_result_redis/<string:job_id>', methods=['GET'])
