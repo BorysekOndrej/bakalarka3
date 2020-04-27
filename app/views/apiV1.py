@@ -2,7 +2,12 @@ import datetime
 import json
 import random
 
-from flask import Blueprint
+from flask import Blueprint, current_app
+
+import app.object_models as object_models
+import app.utils.sslyze_scanner as sslyze_scanner
+from config import FlaskConfig
+
 bp = Blueprint('apiV1', __name__)
 
 import flask
@@ -245,3 +250,21 @@ def api_get_user_targets():
     json_string = json.dumps(json_dict, default=str)
     # logger.debug(json_string)
     return json_string, 200
+
+
+@bp.route('/sslyze_scan_targets', methods=['POST'])
+@flask_jwt_extended.jwt_required
+def api_sslyze_scan_targets():
+    twe = object_models.load_json_to_targets_with_extra(request.data)
+
+    if FlaskConfig.REDIS_ENABLED:
+        ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
+        ntwe_json_string = json.dumps(ntwe_json_list)
+
+        import sslyze_background_redis
+        return jsonify({'results_attached': False,
+                        'backgroud_job_id': sslyze_background_redis.reddis_sslyze_enqueu(current_app,
+                                                                                         ntwe_json_string)}), 200
+
+    return jsonify({'results_attached': True,
+                    'results': sslyze_scanner.scan_domains_to_json(twe)}), 200

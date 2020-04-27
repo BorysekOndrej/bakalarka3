@@ -5,7 +5,7 @@ import random
 import redis
 from flask import Blueprint
 from config import FlaskConfig
-import app.utils.redis_test_worker as redis_test_worker
+import app.utils.sslyze_background_redis as redis_test_worker
 import app.db_schemas as db_schemas
 
 bp = Blueprint('apiDebug', __name__)
@@ -57,7 +57,7 @@ def debug_sslyze_batch_scan_enqueue_reddis():
         return "Reddis support is not enabled in config", 500
     # At this point I don't have access to DB (this can be run on sensor), so I can't really fully validate.
 
-    twe = redis_test_worker.load_json_to_targets_with_extra(request.data)
+    twe = object_models.load_json_to_targets_with_extra(request.data)
     ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
     ntwe_json_string = json.dumps(ntwe_json_list)
 

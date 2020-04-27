@@ -1,4 +1,8 @@
 from __future__ import annotations
+
+import json
+from typing import List
+
 import marshmallow.fields
 import marshmallow_sqlalchemy.fields
 
@@ -27,6 +31,15 @@ class TargetWithExtra(object):
                                                            transient_only=True)
         extra = data.get("extra", dict())
         return TargetWithExtra(target, extra)
+
+
+def load_json_to_targets_with_extra(json_string: str) -> List[TargetWithExtra]:
+    data_arr = json.loads(json_string)
+    twe = []
+    for single_twe_dict in data_arr:
+        single_twe_obj = TargetWithExtra.from_dict(single_twe_dict)
+        twe.append(single_twe_obj)
+    return twe
 
 
 class TargetWithExtraSchema(marshmallow.Schema):
