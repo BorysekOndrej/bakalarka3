@@ -40,9 +40,6 @@ def create_app():
     jwt.init_app(app_new)
     cors.init_app(app_new)
 
-    app_new.config.from_object(rq_dashboard.default_settings)
-    app_new.register_blueprint(rq_dashboard.blueprint, url_prefix='/debug/rq_dashboard/')
-
     with app_new.app_context():
         from app.views.apiV1 import bp as api_v1
         app_new.register_blueprint(api_v1, url_prefix='/api/v1')
@@ -52,6 +49,9 @@ def create_app():
 
         from app.views.other import bp as other_routes
         app_new.register_blueprint(other_routes, url_prefix='/')
+
+        app_new.config.from_object(rq_dashboard.default_settings)
+        app_new.register_blueprint(rq_dashboard.blueprint, url_prefix='/debug/rq_dashboard/')
 
         import app.utils.logging_intercept
         # from app import db_models
