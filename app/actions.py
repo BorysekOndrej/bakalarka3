@@ -1,7 +1,7 @@
 import json
 from typing import Optional, List
 
-import scan_scheduler
+import app.scan_scheduler as scan_scheduler
 from app import db_models, db_schemas
 import app.object_models as object_models
 import app.utils.db_utils_advanced as db_utils_advanced
