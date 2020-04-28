@@ -54,10 +54,7 @@ def create_app():
         app_new.register_blueprint(rq_dashboard.blueprint, url_prefix='/debug/rq_dashboard/')
 
         import app.utils.logging_intercept
-        # from app import db_models
-        # from app import scan_scheduler
-        # import app.db_models as db_models
-        # import app.scan_scheduler as scan_scheduler
+
         logger.info("Before DB create")
         # db.create_all()
         logger.info("After DB create")
