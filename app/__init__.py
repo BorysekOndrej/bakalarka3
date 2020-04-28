@@ -50,8 +50,9 @@ def create_app():
         from app.views.other import bp as other_routes
         app_new.register_blueprint(other_routes, url_prefix='/')
 
-        app_new.config.from_object(rq_dashboard.default_settings)
-        app_new.register_blueprint(rq_dashboard.blueprint, url_prefix='/debug/rq_dashboard/')
+        if config.FlaskConfig.REDIS_ENABLED:
+            app_new.config.from_object(rq_dashboard.default_settings)
+            app_new.register_blueprint(rq_dashboard.blueprint, url_prefix='/debug/rq_dashboard/')
 
         import app.utils.logging_intercept
 
