@@ -19,7 +19,8 @@ class TargetWithExtra(object):
             self.extra = {}
 
     def __repr__(self):
-        return f"TargetWithExtra(target={self.target_definition}, extra={self.extra})"
+        # return f"TargetWithExtra(target={self.target_definition}, extra={self.extra})"
+        return json.dumps(self.json_repr())
 
     def json_repr(self):
         return {"target_definition": repr(self.target_definition), "extra": self.extra}

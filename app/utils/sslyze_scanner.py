@@ -29,7 +29,7 @@ class ScanResult:
     def make_json(self):
         return json.dumps({
             "success": self.success,  # todo
-            "target": repr(self.target),
+            "target": object_models.TargetWithExtraSchema().dumps(self.target),
             "server_info": self.server_info,
             "results": self.plugin_results,
             "msg": self.msg

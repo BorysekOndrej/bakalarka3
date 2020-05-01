@@ -3,6 +3,8 @@ import app.db_models
 import app.db_schemas as db_schemas
 
 # from loguru import logger
+import app.object_models as object_models
+
 logger = app.logger
 
 from sqlalchemy.exc import IntegrityError
@@ -271,6 +273,9 @@ def run():
 def insert_scan_result_into_db(scan_result: dict):
     obj = app.db_models.ScanResults()
 
+    target_dict = json.loads(scan_result.get("target", "{}"))
+    target = object_models.TargetWithExtra.from_dict(target_dict)
+
     general_parser_matching = {
         "Deflate Compression": app.db_models.DeflateCompression,
         "Session Renegotiation": app.db_models.SessionRenegotiation,
@@ -328,6 +333,8 @@ def insert_scan_result_into_db(scan_result: dict):
 
     db_utils.get_one_or_create_from_object(obj)
     # db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ScanResultsSchema, obj)  # todo: general
+
+    # db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanResultsHistorySchema, {'target_id'})
 
     if still_to_parse_test:
         to_remove = []
