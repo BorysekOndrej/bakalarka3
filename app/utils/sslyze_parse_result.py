@@ -127,6 +127,8 @@ def parse_single_ocsp_response(obj):
 
 
 def parse_certificate_information_ocsp_response(obj):
+    if obj is None:
+        return None
     obj["responses_list"] = []
     for x in obj["responses"]:
         obj["responses_list"].append(parse_single_ocsp_response(x))
@@ -174,7 +176,7 @@ def parse_certificate_information(scan_result, plugin_title):
     prep_obj = db_utils.dict_filter_to_class_variables(app.db_models.CertificateInformation, current_plugin)
     # prep_obj["path_validation_error_list"] = ",".join(prep_obj["path_validation_error_list"])
 
-    prep_obj.pop("ocsp_response")
+    # prep_obj.pop("ocsp_response") # todo: check
     prep_obj.pop("path_validation_error_list")
     # prep_obj.pop("path_validation_result_list") # todo
 
@@ -253,9 +255,12 @@ def parse_general(class_type, scan_result, plugin_title):
 @logger.catch
 def run():
     # basic_db_fill_test(session)
-    scan_result_string = files.read_from_file("../tmp/test_copy.out.json")
+    scan_result_string = files.read_from_file("../../tmp/test_copy.out.json")  # todo: fix path
     scan_result = json.loads(scan_result_string)
+    insert_scan_result_into_db(scan_result)
 
+
+def insert_scan_result_into_db(scan_result: dict):
     obj = app.db_models.ScanResults()
 
     general_parser_matching = {
@@ -322,4 +327,4 @@ def run():
                 to_remove.append(plugin_title)
         for plugin_title in to_remove:
             scan_result["results"].pop(plugin_title, None)
-        files.write_to_file("../tmp/still_to_parse.out.json", json.dumps(scan_result, indent=3))
+        # files.write_to_file("../../tmp/still_to_parse.out.json", json.dumps(scan_result, indent=3))  # todo: fix path
