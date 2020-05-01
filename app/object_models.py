@@ -26,7 +26,7 @@ class TargetWithExtra(object):
         return {"target_definition": repr(self.target_definition), "extra": self.extra}
 
     @staticmethod
-    def from_dict(data: dict) -> TargetWithExtra:
+    def transient_from_dict(data: dict) -> TargetWithExtra:
         target = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.TargetSchema,
                                                                      data.get("target_definition", dict()),
                                                                      transient_only=True)
@@ -38,7 +38,7 @@ def load_json_to_targets_with_extra(json_string: str) -> List[TargetWithExtra]:
     data_arr = json.loads(json_string)
     twe = []
     for single_twe_dict in data_arr:
-        single_twe_obj = TargetWithExtra.from_dict(single_twe_dict)
+        single_twe_obj = TargetWithExtra.transient_from_dict(single_twe_dict)
         twe.append(single_twe_obj)
     return twe
 

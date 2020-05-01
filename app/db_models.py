@@ -714,7 +714,7 @@ class ScanResultsHistory(Base, UniqueModel):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    timestamp = db.Column(NumericTimestamp)
+    timestamp = db.Column(NumericTimestamp, default=datetime.datetime.now())
 
     target_id = db.Column(db.Integer, db.ForeignKey('targets.id'), nullable=False)
     target = db.relationship("Target")

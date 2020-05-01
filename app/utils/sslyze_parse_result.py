@@ -274,7 +274,7 @@ def insert_scan_result_into_db(scan_result: dict):
     obj = app.db_models.ScanResults()
 
     target_dict = json.loads(scan_result.get("target", "{}"))
-    target = object_models.TargetWithExtra.from_dict(target_dict)
+    target = object_models.TargetWithExtra.transient_from_dict(target_dict)
 
     general_parser_matching = {
         "Deflate Compression": app.db_models.DeflateCompression,
@@ -331,10 +331,29 @@ def insert_scan_result_into_db(scan_result: dict):
         # this expects Ciphers Suites to be parsed
         obj.server_info_id = parse_server_info(scan_result)
 
-    db_utils.get_one_or_create_from_object(obj)
+    obj, existing = db_utils.get_one_or_create_from_object(obj)
     # db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ScanResultsSchema, obj)  # todo: general
 
-    # db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanResultsHistorySchema, {'target_id'})
+    target_with_ip = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
+                                                                              target,
+                                                                              get_only=True)
+    if target_with_ip is not None:
+        db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanResultsHistorySchema,
+                                                            {'target_id': target_with_ip.id,
+                                                             'scanresult_id': obj.id})
+
+    if target.extra.get("comes_from_dns"):
+        target_copy = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
+                                                                               target,
+                                                                               transient_only=True)
+        target_copy.target_definition.ip_address = None
+        target_without_ip = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
+                                                                                     target,
+                                                                                     get_only = True)
+        if target_without_ip is not None:
+            db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanResultsHistorySchema,
+                                                                {'target_id': target_without_ip.id,
+                                                                 'scanresult_id': obj.id})
 
     if still_to_parse_test:
         to_remove = []
