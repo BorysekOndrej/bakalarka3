@@ -57,7 +57,7 @@ def create_app():
         import app.utils.logging_intercept
 
         logger.info("Before DB create")
-        # db.create_all()
+        db.create_all()
         logger.info("After DB create")
 
         return app_new
