@@ -13,9 +13,11 @@ from flask import request, jsonify, current_app
 import flask_jwt_extended
 
 import app.utils.db_utils as db_utils
+import app.utils.db_utils_advanced as db_utils_advanced
 import app.utils.sslyze_parse_result as sslyze_parse_result
 import app.scan_scheduler as scan_scheduler
 from app import db_models, logger
+import app.db_schemas as db_schemas
 import app.utils.dns_utils as dns_utils
 import app.utils.ct_search as ct_search
 import app.utils.sslyze_scanner as sslyze_scanner
@@ -108,7 +110,11 @@ def debug_db_backdate_last_enqued():
 
 @bp.route('/domain_to_target_string/<string:domain>')
 def debug_domain_to_target_string(domain):
-    return repr(db_models.Target(hostname=domain))
+    # return repr(db_models.Target(hostname=domain))
+    return repr(db_utils_advanced.generic_get_create_edit_from_data(db_schemas.TargetSchema,
+                                                                    {'hostname': domain},
+                                                                    transient_only=True)
+                )
 
 
 @bp.route('/scenario1', methods=['GET'])

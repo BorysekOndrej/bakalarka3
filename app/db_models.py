@@ -107,9 +107,9 @@ class Target(Base, UniqueModel):
     id = db.Column(db.Integer, primary_key=True)
 
     hostname = db.Column(db.String, nullable=False)
-    port = db.Column(db.Integer)  # default=443) # default is being done by overloaded init
+    port = db.Column(db.Integer)  # default is being done by overloaded init
     ip_address = db.Column(db.String, default=None)
-    protocol = db.Column(db.Enum(TlsWrappedProtocolEnum))  #, default=TlsWrappedProtocolEnum.HTTPS) # default is being done by overloaded init
+    protocol = db.Column(db.Enum(TlsWrappedProtocolEnum))  # default is being done by overloaded init
 
     __table_args__ = (
         db.UniqueConstraint('hostname', 'port', 'ip_address', 'protocol', name='_full_target'),)
