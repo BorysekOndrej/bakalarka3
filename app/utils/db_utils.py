@@ -34,14 +34,15 @@ def get_one_or_create(model,
 
 
 def get_one_or_create_from_object(obj: app.db.Model) -> app.db.Model:  # todo: remove this function
-    logger.critical("This function should not be used anywhere")
+    logger.critical("Deprecated: This function should no longer be used anywhere")
     kwargs = {x: vars(obj)[x] for x in vars(obj) if not x.startswith("_")}
     b = type(obj)
     return get_one_or_create(type(obj), **kwargs)
 
 
 def dict_filter_to_class_variables(class_type: app.db.Model, obj_from_json: dict) -> dict:
-    return dict_filter_columns(class_type.attribute_names(), obj_from_json)
+    attr_names = class_type.attribute_names()
+    return dict_filter_columns(attr_names, obj_from_json)
 
 
 def dict_filter_columns(columns_to_keep: list, obj: dict) -> dict:

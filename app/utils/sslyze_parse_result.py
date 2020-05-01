@@ -1,5 +1,6 @@
 import app
 import app.db_models
+import app.db_schemas as db_schemas
 
 # from loguru import logger
 logger = app.logger
@@ -10,6 +11,7 @@ import datetime
 
 import app.utils.certificate as certificate
 import app.utils.db_utils as db_utils
+import app.utils.db_utils_advanced as db_utils_advanced
 import app.utils.files as files
 
 still_to_parse_test = True
@@ -83,8 +85,8 @@ def parse_cipher_suite(scan_result, plugin_title):
                     scan_result["results"][plugin_title][plugin_field]) == 0:
                 scan_result["results"][plugin_title].pop(plugin_field, None)
 
-    res = db_utils.get_one_or_create_from_object(res)
-    return res[0].id
+    res, existing = db_utils.get_one_or_create_from_object(res)
+    return res.id
 
 
 def parse_server_info(scan_result):
@@ -94,12 +96,13 @@ def parse_server_info(scan_result):
     res = app.db_models.ServerInfo(hostname=server_info_part["hostname"], port=server_info_part["port"],
                                    ip_address=server_info_part["ip_address"],
                                    openssl_cipher_string_supported_id=cipher_res_id)
-    res = db_utils.get_one_or_create_from_object(res)
+    # res, existing = db_utils.get_one_or_create_from_object(res)
+    res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ServerInfoSchema, res)
 
     if still_to_parse_test:
         scan_result.pop("server_info")
 
-    return res[0].id
+    return res.id
 
 
 def parse_certificate_chain(obj):
@@ -122,8 +125,9 @@ def parse_single_ocsp_response(obj):
     crt_obj["thisUpdate"] = datetime.datetime.strptime(obj["thisUpdate"], '%b %d %H:%M:%S %Y %Z')
     crt_obj["nextUpdate"] = datetime.datetime.strptime(obj["nextUpdate"], '%b %d %H:%M:%S %Y %Z')
 
-    res = db_utils.get_one_or_create(app.db_models.OCSPResponseSingle, **crt_obj)
-    return res[0].id
+    # res, existing = db_utils.get_one_or_create(app.db_models.OCSPResponseSingle, **crt_obj)
+    res = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.OCSPResponseSingleSchema, crt_obj)
+    return res.id
 
 
 def parse_certificate_information_ocsp_response(obj):
@@ -137,7 +141,8 @@ def parse_certificate_information_ocsp_response(obj):
     obj["responses_list"] = ",".join(str(x) for x in obj["responses_list"])
 
     crt_obj = db_utils.dict_filter_to_class_variables(app.db_models.OCSPResponse, obj)
-    res = app.db_models.OCSPResponse.from_kwargs(crt_obj)
+    # res = app.db_models.OCSPResponse.from_kwargs(crt_obj)
+    res = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.OCSPResponseSchema, crt_obj)
 
     if still_to_parse_test:
         obj.pop("responses")
@@ -180,7 +185,8 @@ def parse_certificate_information(scan_result, plugin_title):
     prep_obj.pop("path_validation_error_list")
     # prep_obj.pop("path_validation_result_list") # todo
 
-    res = db_utils.get_one_or_create(app.db_models.CertificateInformation, **prep_obj)
+    res, existing = db_utils.get_one_or_create(app.db_models.CertificateInformation, **prep_obj)
+    # res = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.CertificateInformationSchema, prep_obj) # todo: general
 
     # logger.error([x for x in current_plugin.keys() if "certificate_chain" in x])
     if still_to_parse_test:
@@ -190,7 +196,7 @@ def parse_certificate_information(scan_result, plugin_title):
         current_plugin.pop("ocsp_response")
         scan_result["results"].pop(plugin_title)
 
-    return res[0].id
+    return res.id
 
 
 def parse_certificate(obj):
@@ -212,8 +218,9 @@ def parse_certificate(obj):
         logger.exception(e)
         logger.error(obj)
 
-    res = db_utils.get_one_or_create(app.db_models.Certificate, **crt_obj)
-    return res[0].id
+    res, existing = db_utils.get_one_or_create(app.db_models.Certificate, **crt_obj)
+    # res = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.CertificateSchema, crt_obj)  # todo: general
+    return res.id
 
 
 def parse_http_security_headers(scan_result, plugin_title):
@@ -225,20 +232,21 @@ def parse_http_security_headers(scan_result, plugin_title):
     prep_obj["expect_ct_header_report_uri"] = current_plugin["expect_ct_header"]["report_uri"]
     prep_obj["expect_ct_header_enforce"] = current_plugin["expect_ct_header"]["enforce"]
 
-    res = db_utils.get_one_or_create(app.db_models.HTTPSecurityHeaders, **prep_obj)
+    # res = db_utils.get_one_or_create(app.db_models.HTTPSecurityHeaders, **prep_obj)
+    res = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.HTTPSecurityHeadersSchema, prep_obj)
 
     if still_to_parse_test:
         current_plugin.pop("verified_certificate_chain")
         scan_result["results"].pop(plugin_title)
 
-    return res[0].id
+    return res.id
 
 
 def parse_tls12_session_resumption(class_type, scan_result, plugin_title):
     current_plugin = scan_result["results"][plugin_title]
     current_plugin["errored_resumptions_list"] = ",".join(current_plugin["errored_resumptions_list"])
     kwargs = db_utils.dict_filter_to_class_variables(class_type, current_plugin)
-    res = class_type.from_kwargs(kwargs)
+    res = class_type.from_kwargs(kwargs)    # todo: use general util
     if still_to_parse_test:
         scan_result["results"].pop(plugin_title)
     return res
@@ -246,7 +254,7 @@ def parse_tls12_session_resumption(class_type, scan_result, plugin_title):
 
 def parse_general(class_type, scan_result, plugin_title):
     current_plugin = scan_result["results"][plugin_title]
-    res = class_type.from_kwargs(current_plugin)
+    res = class_type.from_kwargs(current_plugin)  # todo: use general util
     if still_to_parse_test:
         scan_result["results"].pop(plugin_title)
     return res
@@ -319,6 +327,7 @@ def insert_scan_result_into_db(scan_result: dict):
         obj.server_info_id = parse_server_info(scan_result)
 
     db_utils.get_one_or_create_from_object(obj)
+    # db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ScanResultsSchema, obj)  # todo: general
 
     if still_to_parse_test:
         to_remove = []
