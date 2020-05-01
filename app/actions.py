@@ -1,11 +1,12 @@
 import json
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import app.scan_scheduler as scan_scheduler
 from app import db_models, db_schemas
 import app.object_models as object_models
 import app.utils.db_utils_advanced as db_utils_advanced
 import app.utils.sslyze_scanner as sslyze_scanner
+import app.utils.sslyze_parse_result as sslyze_parse_result
 
 from config import FlaskConfig
 
@@ -41,7 +42,7 @@ def get_target_from_id_if_user_can_see(target_id: int, user_id: int) -> Optional
     return get_target_from_id(target_id)
 
 
-def sslyze_scan(twe: List[object_models.TargetWithExtra]):
+def sslyze_scan(twe: List[object_models.TargetWithExtra]) -> Dict:
     if FlaskConfig.REDIS_ENABLED:
         ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
         ntwe_json_string = json.dumps(ntwe_json_list)
@@ -57,3 +58,15 @@ def sslyze_scan(twe: List[object_models.TargetWithExtra]):
 def sslyze_enqueue_waiting_scans():
     twe = scan_scheduler.get_batch_to_scan()
     sslyze_scan(twe)
+
+
+def sslyze_send_scan_results(scan_dict: dict) -> bool:
+    if not scan_dict.get('results_attached', False):
+        return False
+    results = scan_dict.get("results", dict())
+    if FlaskConfig.SENT_RESULTS_TO_REMOTE:
+        # todo: sent to collector
+        return
+    for x in results:
+        a = json.loads(x)
+        sslyze_parse_result.insert_scan_result_into_db(a)

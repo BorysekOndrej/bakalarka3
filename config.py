@@ -40,8 +40,11 @@ class FlaskConfig(object):
 
     # JWT_SESSION_COOKIE = True
 
-    REDIS_ENABLED = True
+    REDIS_ENABLED = False
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
+
+    SENT_RESULTS_TO_REMOTE = False
+    SENT_RESULTS_COLLECTOR_BASE_URL = 'https://bakalarka3.borysek.eu'
 
 
 class DnsConfig(object):
