@@ -260,4 +260,4 @@ def api_sslyze_scan_targets():
     twe = object_models.load_json_to_targets_with_extra(request.data)
     scan_result = actions.sslyze_scan(twe)
     actions.sslyze_send_scan_results(scan_result)
-    return jsonify(scan_result), 200
+    return scan_result, 200
