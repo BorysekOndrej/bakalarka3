@@ -1,5 +1,5 @@
 import enum
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
 
 from loguru import logger
 from sqlalchemy.exc import IntegrityError
@@ -132,3 +132,8 @@ def actions_on_modification(res):
 def scan_order_minimal_recalculate(target_id: int):
     app.scan_scheduler.update_scan_order_minimal_for_target(target_id)
     app.db_models.LastScan.create_if_not_existent(target_id=target_id)
+
+
+def set_attr_if_none(x: Dict, attr_name: str, default_val):
+    if x.get(attr_name, None) is None:
+        x[attr_name] = default_val

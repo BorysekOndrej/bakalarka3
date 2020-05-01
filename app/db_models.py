@@ -100,10 +100,8 @@ class Target(Base, UniqueModel):
     __noUpdate__ = True
 
     def __init__(self, *args, **kwargs):  # for custom defaults
-        if kwargs.get("port", None) is None:
-            kwargs["port"] = 443
-        if kwargs.get("protocol", None) is None:
-            kwargs["protocol"] = TlsWrappedProtocolEnum.HTTPS
+        db_utils.set_attr_if_none(kwargs, "port", 443)
+        db_utils.set_attr_if_none(kwargs, "protocol", TlsWrappedProtocolEnum.HTTPS)
         super().__init__(*args, **kwargs)
 
     id = db.Column(db.Integer, primary_key=True)
