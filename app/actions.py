@@ -56,15 +56,19 @@ def sslyze_scan(twe: List[object_models.TargetWithExtra]) -> Dict:
 
 
 def sslyze_enqueue_waiting_scans():
-    twe = scan_scheduler.get_batch_to_scan()
-    sslyze_scan(twe)
+    if FlaskConfig.REMOTE_COLLECTOR:
+        # todo: get from collector
+        pass
+    else:
+        twe = scan_scheduler.get_batch_to_scan()
+    return sslyze_scan(twe)
 
 
 def sslyze_send_scan_results(scan_dict: dict) -> bool:
     if not scan_dict.get('results_attached', False):
         return False
     results = scan_dict.get("results", dict())
-    if FlaskConfig.SENT_RESULTS_TO_REMOTE:
+    if FlaskConfig.REMOTE_COLLECTOR:
         # todo: sent to collector
         return
     for x in results:

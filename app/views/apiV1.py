@@ -261,3 +261,9 @@ def api_sslyze_scan_targets():
     scan_result = actions.sslyze_scan(twe)
     actions.sslyze_send_scan_results(scan_result)
     return scan_result, 200
+
+
+@bp.route('/sslyze_scan_due_targets', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def api_sslyze_scan_due_targets():
+    return actions.sslyze_enqueue_waiting_scans()
