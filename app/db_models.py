@@ -706,3 +706,18 @@ class Notifications(Base, UniqueModel):
 
     preferences = db.Column(db.JSON)
 
+
+class ScanResultsHistory(Base, UniqueModel):
+    __tablename__ = 'scanresultshistory'
+    __uniqueColumns__ = ['target_id', 'scanresult_id']
+    __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    timestamp = db.Column(NumericTimestamp)
+
+    target_id = db.Column(db.Integer, db.ForeignKey('targets.id'), nullable=False)
+    target = db.relationship("Target")
+
+    scanresult_id = db.Column(db.Integer, db.ForeignKey('scanresults.id'), nullable=False)
+    scanresult = db.relationship("ScanResults")

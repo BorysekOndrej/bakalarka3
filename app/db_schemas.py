@@ -267,3 +267,13 @@ class NotificationsSchema(SQLAlchemyAutoSchema):
 
     target = Nested(TargetSchema)
     user = Nested(UserSchema)
+
+
+class ScanResultsHistorySchema(SQLAlchemyAutoSchema):
+    class Meta(BaseSchema.Meta):
+        model = app.db_models.ScanResultsHistory
+        include_relationships = False
+        include_fk = True
+
+    target = Nested(TargetSchema)
+    scanresult = Nested(ScanResultsSchema)
