@@ -347,14 +347,15 @@ def insert_scan_result_into_db(scan_result: dict):
         # files.write_to_file("../../tmp/still_to_parse.out.json", json.dumps(scan_result, indent=3))  # todo: fix path
 
 
-def update_references_to_scan_result(target, scanresult_id: int):
+def update_references_to_scan_result(twe: object_models.TargetWithExtra, scanresult_id: int):
+    target = twe.target_definition
     target_with_ip = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
                                                                               target,
                                                                               get_only=True)
     if target_with_ip is not None:
         update_references_to_scan_result_single_target(target_with_ip.id, scanresult_id)
 
-    if target.extra.get("comes_from_dns"):
+    if twe.extra.get("comes_from_dns"):
         target_copy = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
                                                                                target,
                                                                                transient_only=True)

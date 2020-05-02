@@ -98,6 +98,8 @@ class User(Base):  # todo
 class Target(Base, UniqueModel):
     __tablename__ = 'targets'
     __noUpdate__ = True
+    __uniqueColumns__ = ['hostname', 'port', 'ip_address', 'protocol']
+    __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
 
     def __init__(self, *args, **kwargs):  # for custom defaults
         db_utils.set_attr_if_none(kwargs, "port", 443)
@@ -110,9 +112,6 @@ class Target(Base, UniqueModel):
     port = db.Column(db.Integer)  # default is being done by overloaded init
     ip_address = db.Column(db.String, default=None)
     protocol = db.Column(db.Enum(TlsWrappedProtocolEnum))  # default is being done by overloaded init
-
-    __table_args__ = (
-        db.UniqueConstraint('hostname', 'port', 'ip_address', 'protocol', name='_full_target'),)
 
     def __str__(self):
         return f"{self.hostname}:{self.port}@{self.ip_address}"
@@ -168,8 +167,10 @@ class ScanOrderMinimal(Base):
         return f"ScanOrderMinimal({self.id}, {self.target}, {self.periodicity})"
 
 
-class LastScan(Base):  # this might not have to be in DB, it might be better in fast cache
+class LastScan(Base, UniqueModel):  # this might not have to be in DB, it might be better in fast cache
     __tablename__ = 'lastscan'
+    __uniqueColumns__ = ['target_id']
+    __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
 
     id = db.Column(db.Integer, primary_key=True)
 
