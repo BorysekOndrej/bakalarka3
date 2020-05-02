@@ -27,13 +27,13 @@ class NumericTimestamp(TypeDecorator):
     def __init__(self):
         TypeDecorator.__init__(self)
 
-    def process_bind_param(self, value, dialect):
-        if value is None:
-            return None
-        return int(value.timestamp())
-
-    def process_result_value(self, value, dialect):
-        return datetime.datetime.utcfromtimestamp(value)  # todo: timezone?
+    # def process_bind_param(self, value, dialect):
+    #     if value is None:
+    #         return None
+    #     return int(value.timestamp())
+    #
+    # def process_result_value(self, value, dialect):
+    #     return datetime.datetime.utcfromtimestamp(value)  # todo: timezone?
 
 
 class UniqueModel(object):
@@ -171,7 +171,9 @@ class ScanOrderMinimal(Base):
 class LastScan(Base):  # this might not have to be in DB, it might be better in fast cache
     __tablename__ = 'lastscan'
 
-    id = db.Column(db.Integer, db.ForeignKey('targets.id'), primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+
+    target_id = db.Column(db.Integer, db.ForeignKey('targets.id'), unique=True)
     target = db.relationship("Target")
 
     last_scanned = db.Column(NumericTimestamp)
