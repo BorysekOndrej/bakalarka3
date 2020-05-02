@@ -166,6 +166,16 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size) -> List[object_models.
             break  # there are apparently no new targets
     # todo: make sure that targets_e is deduplicated
 
+    unique_targets_repr = set()
+    unique_targets = []
+    for x in targets_e:
+        if repr(x.target_definition) not in unique_targets_repr:
+            unique_targets_repr.add(repr(x.target_definition))
+            unique_targets.append(x)
+        else:
+            logger.warning(f'{repr(x.target_definition)} got enqueued twice for the same scan batch.')
+
+    targets_e = unique_targets
     logger.info(f"Batch (size {len(targets_e)} with soft max {SchedulerConfig.batch_size}): {targets_e}")
 
     return targets_e
