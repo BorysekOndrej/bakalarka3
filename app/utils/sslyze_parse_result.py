@@ -4,6 +4,7 @@ import app.db_schemas as db_schemas
 
 # from loguru import logger
 import app.object_models as object_models
+import app.db_models as db_models
 
 logger = app.logger
 
@@ -371,13 +372,13 @@ def update_references_to_scan_result_single_target(target_id: int, scanresult_id
     db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanResultsHistorySchema,
                                                         {'target_id': target_id,
                                                          'scanresult_id': scanresult_id,
-                                                         'timestamp': db_utils.datetime_to_timestamp(
+                                                         'timestamp': db_models.datetime_to_timestamp(
                                                              datetime.datetime.now())
                                                          })
 
     db_utils_advanced.generic_get_create_edit_from_data(db_schemas.LastScanSchema,
                                                         {'target_id': target_id,
                                                          'result_id': scanresult_id,
-                                                         'last_scanned': db_utils.datetime_to_timestamp(
+                                                         'last_scanned': db_models.datetime_to_timestamp(
                                                              datetime.datetime.now())
                                                          })
