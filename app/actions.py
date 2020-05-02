@@ -69,11 +69,13 @@ def sslyze_enqueue_waiting_scans():
 def sslyze_send_scan_results(scan_dict: dict) -> bool:
     if not scan_dict.get('results_attached', False):
         return False
-    results: str = scan_dict.get("results", "[]")
+    results: List[str] = scan_dict.get("results", [])
     if FlaskConfig.REMOTE_COLLECTOR:
         # todo: sent to collector
-        return
+        return True
 
-    for x in results:
-        a = json.loads(x)
-        sslyze_parse_result.insert_scan_result_into_db(a)
+    for single_result_str in results:
+        single_result: dict = json.loads(single_result_str)
+        sslyze_parse_result.insert_scan_result_into_db(single_result)
+
+    return True
