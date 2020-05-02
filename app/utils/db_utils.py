@@ -8,7 +8,6 @@ import app
 import copy
 import config
 import app.db_models as db_models
-import datetime
 
 logger = app.logger
 
@@ -138,13 +137,3 @@ def scan_order_minimal_recalculate(target_id: int):
 def set_attr_if_none(x: Dict, attr_name: str, default_val):
     if x.get(attr_name, None) is None:
         x[attr_name] = default_val
-
-
-def datetime_to_timestamp(x: datetime.datetime) -> int:
-    if x is None:
-        return None
-    return int(x.timestamp())
-
-
-def timestamp_to_datetime(x: int) -> datetime.datetime:
-    return datetime.datetime.utcfromtimestamp(x)

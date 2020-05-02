@@ -36,6 +36,15 @@ class NumericTimestamp(TypeDecorator):
     #     return datetime.datetime.utcfromtimestamp(value)  # todo: timezone?
 
 
+def datetime_to_timestamp(x: datetime.datetime) -> int:
+    if x is None:
+        return None
+    return int(x.timestamp())
+
+
+def timestamp_to_datetime(x: int) -> datetime.datetime:
+    return datetime.datetime.utcfromtimestamp(x)
+
 class UniqueModel(object):
     @classmethod
     def from_kwargs(cls, obj) -> Optional[int]:
@@ -189,7 +198,7 @@ class LastScan(Base, UniqueModel):  # this might not have to be in DB, it might 
             rand_time_offset = random.randrange(0, SchedulerConfig.max_first_scan_delay)
             enqueue_time = datetime.datetime.now() - datetime.timedelta(seconds=rand_time_offset)
             #res = LastScan(id=target_id, last_enqueued=int(enqueue_time.timestamp()))
-            res = LastScan(id=target_id, last_enqueued=enqueue_time)
+            res = LastScan(id=target_id, last_enqueued=datetime_to_timestamp(enqueue_time))
             db.session.add(res)
             db.session.commit()
         except Exception as e:
@@ -717,7 +726,7 @@ class ScanResultsHistory(Base, UniqueModel):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    timestamp = db.Column(NumericTimestamp, default=datetime.datetime.now())
+    timestamp = db.Column(NumericTimestamp, default=datetime_to_timestamp(datetime.datetime.now()))
 
     target_id = db.Column(db.Integer, db.ForeignKey('targets.id'), nullable=False)
     target = db.relationship("Target")
