@@ -3,7 +3,7 @@ from typing import Optional, List
 from sqlalchemy import func
 
 import app
-import app.db_models
+import app.db_models as db_models
 from config import SchedulerConfig
 import app.utils.db_utils as db_utils
 import app.utils.dns_utils as dns_utils
@@ -30,18 +30,18 @@ def default_enqueued_offseted_time():
 
 def update_scan_order_minimal_for_target(target_id: int) -> Optional[int]:
     logger.info(f"Updating minimal scan order for target_id: {target_id}")
-    res = db.session.query(func.min(app.db_models.ScanOrder.periodicity)) \
-        .filter(app.db_models.ScanOrder.target_id == target_id) \
-        .filter(app.db_models.ScanOrder.active == True) \
+    res = db.session.query(func.min(db_models.ScanOrder.periodicity)) \
+        .filter(db_models.ScanOrder.target_id == target_id) \
+        .filter(db_models.ScanOrder.active == True) \
         .one()
     min_periodicity = res[0]
 
     if min_periodicity is None:
-        app.db_models.ScanOrderMinimal.query.filter_by(id=target_id).delete()
+        db_models.ScanOrderMinimal.query.filter_by(id=target_id).delete()
         db.session.commit()
         return min_periodicity
 
-    som, _ = db_utils.get_one_or_create(app.db_models.ScanOrderMinimal, **{"id": target_id})
+    som, _ = db_utils.get_one_or_create(db_models.ScanOrderMinimal, **{"id": target_id})
     if som.periodicity != min_periodicity:
         som.periodicity = min_periodicity
         db.session.commit()
@@ -51,21 +51,21 @@ def update_scan_order_minimal_for_target(target_id: int) -> Optional[int]:
 
 def qry_scan_base():
     date_offseted = default_enqueued_offseted_time()
-    return db.session.query(app.db_models.ScanOrderMinimal.id) \
-        .filter(app.db_models.LastScan.id == app.db_models.ScanOrderMinimal.id) \
-        .filter(app.db_models.LastScan.last_enqueued < date_offseted) \
+    return db.session.query(db_models.ScanOrderMinimal.id) \
+        .filter(db_models.LastScan.id == db_models.ScanOrderMinimal.id) \
+        .filter(db_models.LastScan.last_enqueued < date_offseted) \
 
 
 def qry_first_scan():
     return qry_scan_base() \
-        .filter(app.db_models.LastScan.last_scanned.is_(None))
+        .filter(db_models.LastScan.last_scanned.is_(None))
 
 
 def qry_rescan(query_compare_time=None):
-    query_compare_time = default_current_time(query_compare_time)
+    query_compare_time = db_models.datetime_to_timestamp(default_current_time(query_compare_time))
     return qry_scan_base() \
-        .filter(app.db_models.LastScan.last_scanned + app.db_models.ScanOrderMinimal.periodicity < query_compare_time) \
-        .order_by((app.db_models.LastScan.last_enqueued).desc()) # todo: check the sum is working
+        .filter(db_models.LastScan.last_scanned + db_models.ScanOrderMinimal.periodicity < query_compare_time) \
+        .order_by((db_models.LastScan.last_enqueued).desc()) # todo: check the sum is working
 
 
 def get_backlog_count_first_scan():
@@ -97,18 +97,18 @@ def get_due_targets(limit_n=SchedulerConfig.batch_increments):
 def mark_enqueued_targets(target_ids, time=None):
     if not target_ids:
         return
-    time = default_current_time(time)
-    db.session.query(app.db_models.LastScan)\
-        .filter(app.db_models.LastScan.id.in_(tuple(target_ids)))\
-        .update({app.db_models.LastScan.last_enqueued: time}, synchronize_session='fetch')
+    time = db_models.datetime_to_timestamp(default_current_time(time))
+    db.session.query(db_models.LastScan)\
+        .filter(db_models.LastScan.id.in_(tuple(target_ids)))\
+        .update({db_models.LastScan.last_enqueued: time}, synchronize_session='fetch')
     db.session.commit()
 
 
 def backdate_enqueued_targets():
-    query_compare_time = default_enqueued_offseted_time()
-    res = db.session.query(app.db_models.LastScan.id) \
-        .filter(app.db_models.ScanOrderMinimal.id == app.db_models.LastScan.id) \
-        .filter(app.db_models.LastScan.last_enqueued > query_compare_time) \
+    query_compare_time = db_models.datetime_to_timestamp(default_enqueued_offseted_time())
+    res = db.session.query(db_models.LastScan.id) \
+        .filter(db_models.ScanOrderMinimal.id == db_models.LastScan.id) \
+        .filter(db_models.LastScan.last_enqueued > query_compare_time) \
         .limit(SchedulerConfig.batch_size) \
         .all()
 
@@ -134,12 +134,12 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size) -> List[object_models.
         new_ids = get_due_targets(next_due_targets_request_size)
         mark_enqueued_targets(new_ids)
 
-        new_targets = db.session.query(app.db_models.Target) \
-            .filter(app.db_models.Target.id.in_(tuple(new_ids))) \
+        new_targets = db.session.query(db_models.Target) \
+            .filter(db_models.Target.id.in_(tuple(new_ids))) \
             .all()
 
         for single_target in new_targets:
-            # single_target: app.db_models.Target
+            # single_target: db_models.Target
             if single_target.ip_address:
                 new_target_with_extra = object_models.TargetWithExtra(single_target, {"comes_from_dns": False})
                 targets_e.add(new_target_with_extra)
