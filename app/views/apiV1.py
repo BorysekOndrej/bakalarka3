@@ -267,3 +267,20 @@ def api_sslyze_scan_targets():
 @flask_jwt_extended.jwt_required
 def api_sslyze_scan_due_targets():
     return actions.sslyze_enqueue_waiting_scans()
+
+
+@bp.route('/sslyze_import_scan_results', methods=['POST'])
+def api_sslyze_import_scan_results():
+    if request.remote_addr != '127.0.0.1':  # todo: fix this
+        logger.warning(f'Request to import scan results from non localhost IP ({request.remote_addr})')
+        return 'From localhost only', 401
+    data = json.loads(request.data)
+    if not data.get('results_attached', False):
+        return "No results attached flag", 400
+    data["results"] = json.loads(data.get("results", "[]"))
+    new_res = []
+    for x in data["results"]:
+        new_res.append(json.dumps(x))
+    data["results"] = new_res
+    actions.sslyze_send_scan_results(data)
+    return "ok", 200

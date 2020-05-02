@@ -51,8 +51,10 @@ def sslyze_scan(twe: List[object_models.TargetWithExtra]) -> Dict:
         return {'results_attached': False,
                 'backgroud_job_id': sslyze_background_redis.redis_sslyze_enqueu(ntwe_json_string)}
 
-    return {'results_attached': True,
-            'results': sslyze_scanner.scan_domains_to_json(twe)}
+    list_of_results_as_json: List[str] = sslyze_scanner.scan_domains_to_json(twe)
+    answer = {'results_attached': True, 'results': list_of_results_as_json}
+    sslyze_send_scan_results(answer)
+    return answer
 
 
 def sslyze_enqueue_waiting_scans():
@@ -67,10 +69,11 @@ def sslyze_enqueue_waiting_scans():
 def sslyze_send_scan_results(scan_dict: dict) -> bool:
     if not scan_dict.get('results_attached', False):
         return False
-    results = scan_dict.get("results", dict())
+    results: str = scan_dict.get("results", "[]")
     if FlaskConfig.REMOTE_COLLECTOR:
         # todo: sent to collector
         return
+
     for x in results:
         a = json.loads(x)
         sslyze_parse_result.insert_scan_result_into_db(a)
