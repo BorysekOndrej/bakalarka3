@@ -1,5 +1,5 @@
 import app
-import app.db_models
+import app.db_models as db_models
 import app.db_schemas as db_schemas
 
 # from loguru import logger
@@ -334,26 +334,8 @@ def insert_scan_result_into_db(scan_result: dict):
     obj, existing = db_utils.get_one_or_create_from_object(obj)
     # db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ScanResultsSchema, obj)  # todo: general
 
-    target_with_ip = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
-                                                                              target,
-                                                                              get_only=True)
-    if target_with_ip is not None:
-        db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanResultsHistorySchema,
-                                                            {'target_id': target_with_ip.id,
-                                                             'scanresult_id': obj.id})
-
-    if target.extra.get("comes_from_dns"):
-        target_copy = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
-                                                                               target,
-                                                                               transient_only=True)
-        target_copy.target_definition.ip_address = None
-        target_without_ip = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
-                                                                                     target,
-                                                                                     get_only = True)
-        if target_without_ip is not None:
-            db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanResultsHistorySchema,
-                                                                {'target_id': target_without_ip.id,
-                                                                 'scanresult_id': obj.id})
+    scanresult_id = obj.id
+    update_references_to_scan_result(target, scanresult_id)
 
     if still_to_parse_test:
         to_remove = []
@@ -363,3 +345,38 @@ def insert_scan_result_into_db(scan_result: dict):
         for plugin_title in to_remove:
             scan_result["results"].pop(plugin_title, None)
         # files.write_to_file("../../tmp/still_to_parse.out.json", json.dumps(scan_result, indent=3))  # todo: fix path
+
+
+def update_references_to_scan_result(target, scanresult_id: int):
+    target_with_ip = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
+                                                                              target,
+                                                                              get_only=True)
+    if target_with_ip is not None:
+        update_references_to_scan_result_single_target(target_with_ip.id, scanresult_id)
+
+    if target.extra.get("comes_from_dns"):
+        target_copy = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
+                                                                               target,
+                                                                               transient_only=True)
+        target_copy.target_definition.ip_address = None
+        target_without_ip = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
+                                                                                     target,
+                                                                                     get_only=True)
+        if target_without_ip is not None:
+            update_references_to_scan_result_single_target(target_without_ip.id, scanresult_id)
+
+
+def update_references_to_scan_result_single_target(target_id: int, scanresult_id: int):
+    db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanResultsHistorySchema,
+                                                        {'target_id': target_id,
+                                                         'scanresult_id': scanresult_id,
+                                                         'timestamp': db_utils.datetime_to_timestamp(
+                                                             datetime.datetime.now())
+                                                         })
+
+    db_utils_advanced.generic_get_create_edit_from_data(db_schemas.LastScanSchema,
+                                                        {'target_id': target_id,
+                                                         'result_id': scanresult_id,
+                                                         'last_scanned': db_utils.datetime_to_timestamp(
+                                                             datetime.datetime.now())
+                                                         })

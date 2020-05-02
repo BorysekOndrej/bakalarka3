@@ -277,3 +277,13 @@ class ScanResultsHistorySchema(SQLAlchemyAutoSchema):
 
     target = Nested(TargetSchema)
     scanresult = Nested(ScanResultsSchema)
+
+
+class LastScanSchema(SQLAlchemyAutoSchema):
+    class Meta(BaseSchema.Meta):
+        model = app.db_models.LastScan
+        include_relationships = False
+        include_fk = True
+
+    target = Nested(TargetSchema)
+    result = Nested(ScanResultsSchema)
