@@ -168,6 +168,7 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size) -> List[object_models.
 
     unique_targets_repr = set()
     unique_targets = []
+    # todo: if collision appears, take the one that comes from DNS
     for x in targets_e:
         if repr(x.target_definition) not in unique_targets_repr:
             unique_targets_repr.add(repr(x.target_definition))
