@@ -1,4 +1,4 @@
-from marshmallow import fields
+from marshmallow import fields, EXCLUDE
 from marshmallow.fields import Pluck
 from marshmallow_enum import EnumField
 from marshmallow_sqlalchemy import SQLAlchemyAutoSchema, SQLAlchemySchema, auto_field
@@ -24,6 +24,7 @@ class TargetSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
         model = app.db_models.Target
         exclude = ()
+        unknown = EXCLUDE  # todo: sort this out
 
     # It's possible to define defaults here. However, default here would require aditional default functions, as None is
     # considered valid value by Marshmallow does not trigger default/missing.
