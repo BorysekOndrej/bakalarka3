@@ -49,8 +49,8 @@ class FlaskConfig(object):
 
 class DnsConfig(object):
     nameservers = ['8.8.8.8', '1.1.1.1']
-    types_of_records = ['A', 'AAAA']  # todo consider CNAMEs?
-    max_records_per_resolve = 50  # todo
+    types_of_records = ['A']  #, 'AAAA']  # todo consider CNAMEs?
+    max_records_per_resolve = 2  # 50  # todo
 
 
 class ImportConfig(object):
