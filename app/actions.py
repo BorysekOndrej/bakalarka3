@@ -1,5 +1,5 @@
 import json
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 
 import app.scan_scheduler as scan_scheduler
 from app import db_models, db_schemas
@@ -79,3 +79,16 @@ def sslyze_send_scan_results(scan_dict: dict) -> bool:
         sslyze_parse_result.insert_scan_result_into_db(single_result)
 
     return True
+
+
+def get_last_scan_and_result(target_id: int, user_id: int) -> Optional[Tuple[db_models.LastScan, db_models.ScanResults]]:
+    if not can_user_get_target_definition_by_id(target_id, user_id):
+        return None
+
+    scan_result = db_models.db.session\
+        .query(db_models.LastScan, db_models.ScanResults)\
+        .filter(db_models.LastScan.target_id == target_id) \
+        .filter(db_models.LastScan.result_id == db_models.ScanResults.id) \
+        .one()
+
+    return scan_result

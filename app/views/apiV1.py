@@ -293,18 +293,16 @@ def api_get_result_for_target(target_id):
     user_jwt = flask_jwt_extended.get_jwt_identity()
     user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
 
-    if not actions.can_user_get_target_definition_by_id(target_id, user_id):
+    last_scan, scan_result = actions.get_last_scan_and_result(target_id, user_id)
+    last_scan: db_models.LastScan
+    scan_result: db_models.ScanResults
+
+    if scan_result is None:
         return "Target either doesn't exist or the current user doesn't have permission to view it.", 401
 
-    # todo: make it one query only
-    scan_id, last_scanned = db_models.db.session\
-        .query(db_models.LastScan.id, db_models.LastScan.last_scanned)\
-        .filter(db_models.LastScan.target_id == target_id)\
-        .first()
-
+    last_scanned = last_scan.last_scanned
     last_scanned_datetime = db_models.timestamp_to_datetime(last_scanned)
 
-    scan_result = db_models.db.session.query(db_models.ScanResults).get(scan_id)
     scan_result_str = db_schemas.ScanResultsSchema().dumps(scan_result)
 
     return jsonify({'result': json.loads(scan_result_str), 'time': last_scanned_datetime}), 200
@@ -316,25 +314,17 @@ def api_get_basic_cert_info_for_target(target_id):
     user_jwt = flask_jwt_extended.get_jwt_identity()
     user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
 
-    if not actions.can_user_get_target_definition_by_id(target_id, user_id):
+    last_scan, scan_result = actions.get_last_scan_and_result(target_id, user_id)
+    last_scan: db_models.LastScan
+    scan_result: db_models.ScanResults
+
+    if scan_result is None:
         return "Target either doesn't exist or the current user doesn't have permission to view it.", 401
 
-    # todo: make it one query only
-    scan_id, last_scanned = db_models.db.session\
-        .query(db_models.LastScan.id, db_models.LastScan.last_scanned)\
-        .filter(db_models.LastScan.target_id == target_id)\
-        .first()
-
+    last_scanned = last_scan.last_scanned
     last_scanned_datetime = db_models.timestamp_to_datetime(last_scanned)
-
-    cert_info: db_models.CertificateInformation = db_models.db.session\
-        .query(db_models.CertificateInformation)\
-        .join(db_models.ScanResults)\
-        .filter(db_models.ScanResults.id == scan_id)\
-        .first()
-
+    cert_info = scan_result.certificate_information
     verified_chain: db_models.CertificateChain = cert_info.verified_certificate_chain_list
-    # todo: handle none
     certificates_in_chain: List[db_models.Certificate] = db_models.Certificate.select_from_list(verified_chain.chain)
 
     min_not_after_arr = min([x.notAfter for x in certificates_in_chain])
