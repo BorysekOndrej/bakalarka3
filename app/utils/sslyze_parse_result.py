@@ -360,7 +360,7 @@ def update_references_to_scan_result(twe: object_models.TargetWithExtra, scanres
         target_copy = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
                                                                                target,
                                                                                transient_only=True)
-        target_copy.target_definition.ip_address = None
+        target_copy.ip_address = None
         target_without_ip = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.TargetSchema,
                                                                                      target,
                                                                                      get_only=True)
@@ -376,9 +376,19 @@ def update_references_to_scan_result_single_target(target_id: int, scanresult_id
                                                              datetime.datetime.now())
                                                          })
 
-    db_utils_advanced.generic_get_create_edit_from_data(db_schemas.LastScanSchema,
-                                                        {'target_id': target_id,
-                                                         'result_id': scanresult_id,
-                                                         'last_scanned': db_models.datetime_to_timestamp(
-                                                             datetime.datetime.now())
-                                                         })
+    # ls = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.LastScanSchema,
+    #                                                          {'target_id': target_id,
+    #                                                           'last_scanned': db_models.datetime_to_timestamp(datetime.datetime.now()),
+    #                                                           'scanresult_id': scanresult_id,
+    #                                                           # 'last_enqueued': # previous value
+    #                                                           })
+
+    ls = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.LastScanSchema,
+                                                             {'target_id': target_id},
+                                                             get_only=True)
+    if ls is None:
+        logger.error(f"Scan result for a target which doesn't have Last Scan record. {target_id}")
+        return
+    ls.last_scanned = db_models.datetime_to_timestamp(datetime.datetime.now())
+    ls.result_id = scanresult_id
+    db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.LastScanSchema, ls)
