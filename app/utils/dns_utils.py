@@ -1,3 +1,4 @@
+from random import random
 from typing import List
 
 import dns.resolver
@@ -18,15 +19,18 @@ for x in domain_names:
 def get_ips_for_domain(domain: str) -> List[str]:
     resolver = dns.resolver.Resolver(configure=False)
     resolver.nameservers = DnsConfig.nameservers
-    final_list = []
+    all_answers = set()  # todo: check if this deduplicates tuples
     for type_of_record in DnsConfig.types_of_records:
         try:
             # print(domain)
             answer = resolver.query(domain, type_of_record)
             for sr in answer:
                 # print(domain, type_of_record, sr)
-                final_list.append((type_of_record, sr.to_text()))
+                all_answers.add((type_of_record, sr.to_text()))
         except Exception as e:
             logger.warning(f"DNS resolution failed for domain {domain} with error {e}")
 
-    return list(final_list)
+    try:
+        return list(random.sample(all_answers, DnsConfig.max_records_per_resolve))
+    except ValueError:
+        return list(all_answers)
