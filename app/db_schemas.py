@@ -23,12 +23,12 @@ class BaseSchema(SQLAlchemySchema):
 class TargetSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
         model = app.db_models.Target
-        exclude = ("id",)
+        exclude = ()
 
     # It's possible to define defaults here. However, default here would require aditional default functions, as None is
     # considered valid value by Marshmallow does not trigger default/missing.
     protocol = EnumField(sslyze.ssl_settings.TlsWrappedProtocolEnum)
-    id = auto_field("id", dump_only=True)
+    id = auto_field(dump_only=True)
 
 
 class UserSchema(SQLAlchemyAutoSchema):
