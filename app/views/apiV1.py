@@ -321,18 +321,15 @@ def api_get_basic_cert_info_for_target(target_id):
     if scan_result is None:
         return "Target either doesn't exist or the current user doesn't have permission to view it.", 401
 
-    last_scanned = last_scan.last_scanned
-    last_scanned_datetime = db_models.timestamp_to_datetime(last_scanned)
+    last_scanned_datetime = db_models.timestamp_to_datetime(last_scan.last_scanned)
     cert_info = scan_result.certificate_information
-    verified_chain: db_models.CertificateChain = cert_info.verified_certificate_chain_list
+    verified_chain = cert_info.verified_certificate_chain_list
     certificates_in_chain: List[db_models.Certificate] = db_models.Certificate.select_from_list(verified_chain.chain)
 
-    min_not_after_arr = min([x.notAfter for x in certificates_in_chain])
-    max_not_before_arr = max([x.notBefore for x in certificates_in_chain])
     list_cert = certificates_in_chain[0]
 
-    return {'chain_notBefore': max_not_before_arr,
-            'chain_notAfter': min_not_after_arr,
+    return {'chain_notBefore': max([x.notBefore for x in certificates_in_chain]),
+            'chain_notAfter': min([x.notAfter for x in certificates_in_chain]),
             'leaf_sni': list_cert.subject_alternative_name_list,
             'leaf_subject': list_cert.subject,
             'information_fetched_on': last_scanned_datetime
