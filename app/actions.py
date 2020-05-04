@@ -11,7 +11,7 @@ import app.utils.sslyze_parse_result as sslyze_parse_result
 from config import FlaskConfig
 
 
-def can_user_get_target_definition_by_id(target_id: int, user_id: int):
+def can_user_get_target_definition_by_id(target_id: int, user_id: int) -> bool:
     scan_order = db_utils_advanced.generic_get_create_edit_from_data(
         db_schemas.ScanOrderSchema,
         {"target_id": target_id, "user_id": user_id},

@@ -284,3 +284,23 @@ def api_sslyze_import_scan_results():
     data["results"] = new_res
     actions.sslyze_send_scan_results(data)
     return "ok", 200
+
+
+@bp.route('/get_result_for_target/<int:target_id>', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def api_get_result_for_target(target_id):
+    user_jwt = flask_jwt_extended.get_jwt_identity()
+    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+
+    if not actions.can_user_get_target_definition_by_id(target_id, user_id):
+        return "Target either doesn't exist or the current user doesn't have permission to view it.", 401
+
+    # todo: make it one query only
+    scan_id = db_models.db.session.query(db_models.LastScan.id)\
+        .filter(db_models.LastScan.target_id == target_id)\
+        .first()
+
+    scan_result = db_models.db.session.query(db_models.ScanResults).get(scan_id)
+    scan_result_str = db_schemas.ScanResultsSchema().dumps(scan_result)
+
+    return jsonify(json.loads(scan_result_str)), 200
