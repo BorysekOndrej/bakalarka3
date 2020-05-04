@@ -1,7 +1,7 @@
 from marshmallow import fields
 from marshmallow.fields import Pluck
 from marshmallow_enum import EnumField
-from marshmallow_sqlalchemy import SQLAlchemyAutoSchema, SQLAlchemySchema
+from marshmallow_sqlalchemy import SQLAlchemyAutoSchema, SQLAlchemySchema, auto_field
 from marshmallow_sqlalchemy.fields import Nested
 import sslyze.ssl_settings
 
@@ -23,10 +23,12 @@ class BaseSchema(SQLAlchemySchema):
 class TargetSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
         model = app.db_models.Target
-        exclude = ()  # I want to dump the id in this scheme
+        exclude = ("id",)
+
     # It's possible to define defaults here. However, default here would require aditional default functions, as None is
     # considered valid value by Marshmallow does not trigger default/missing.
     protocol = EnumField(sslyze.ssl_settings.TlsWrappedProtocolEnum)
+    id = auto_field("id", dump_only=True)
 
 
 class UserSchema(SQLAlchemyAutoSchema):

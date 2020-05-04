@@ -41,7 +41,9 @@ def get_one_or_create_from_object(obj: app.db.Model) -> Tuple[app.db.Model, bool
 
 
 def dict_filter_to_class_variables(class_type: app.db.Model, obj_from_json: dict) -> dict:
-    attr_names = class_type.attribute_names()
+    attr_names: list = class_type.attribute_names()
+    if "id" in attr_names:
+        attr_names.remove("id")
     return dict_filter_columns(attr_names, obj_from_json)
 
 
@@ -72,7 +74,7 @@ def get_search_by(model: app.db.Model, kwargs: dict) -> Tuple[dict, dict]:
             f"get_or_create_or_update_by_unique received kwargs with invalid vars for the {model}, removed vars were {(set(kwargs_original) - set(kwargs))}")
     if kwargs.get("id", None):
         logger.warning(
-            f"get_or_create_or_update_by_unique received kwargs including id for model {model}. Potential security risk.")
+            f"get_or_create_or_update_by_unique received kwargs including id for model {model}. Removing.")
 
     search_by = kwargs
     if hasattr(model, '__uniqueColumns__'):
@@ -116,10 +118,15 @@ def get_or_create_or_update_by_unique(model: app.db.Model, kwargs: dict, get_onl
             setattr(res, key, kwargs[key])
             something_changed = True
 
+
     if something_changed:
         app.db.session.commit()
         if hasattr(res, 'on_modification') and res.on_modification:
             actions_on_modification(res)
+    else:
+        pass
+    app.db.session.commit()  # it's possible that some change happened but isn't yet commited. In such a case the
+    # something_changed detection would fail.
 
     return res
 
