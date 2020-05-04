@@ -296,11 +296,14 @@ def api_get_result_for_target(target_id):
         return "Target either doesn't exist or the current user doesn't have permission to view it.", 401
 
     # todo: make it one query only
-    scan_id = db_models.db.session.query(db_models.LastScan.id)\
+    scan_id, last_scanned = db_models.db.session\
+        .query(db_models.LastScan.id, db_models.LastScan.last_scanned)\
         .filter(db_models.LastScan.target_id == target_id)\
         .first()
+
+    last_scanned_datetime = db_models.timestamp_to_datetime(last_scanned)
 
     scan_result = db_models.db.session.query(db_models.ScanResults).get(scan_id)
     scan_result_str = db_schemas.ScanResultsSchema().dumps(scan_result)
 
-    return jsonify(json.loads(scan_result_str)), 200
+    return jsonify({'result': json.loads(scan_result_str), 'time': last_scanned_datetime}), 200
