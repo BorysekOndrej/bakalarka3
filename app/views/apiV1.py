@@ -1,7 +1,7 @@
 import datetime
 import json
 import random
-from typing import List
+from typing import List, Tuple
 
 from flask import Blueprint, current_app
 
@@ -232,11 +232,17 @@ def refresh():
 def api_get_user_targets():
     jwt = flask_jwt_extended.get_jwt_identity()
     # logger.debug(jwt)
+
+    # todo: priority: sort out non existent scan result. Outer join?
     res = db_models.db.session \
-        .query(db_models.Target, db_models.ScanOrder.active) \
-        .join(db_models.ScanOrder) \
+        .query(db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults) \
+        .filter(db_models.LastScan.target_id == db_models.Target.id) \
+        .filter(db_models.LastScan.result_id == db_models.ScanResults.id) \
+        .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
         .filter(db_models.ScanOrder.user_id == jwt["id"]) \
         .all()
+
+    # res: List[Tuple[db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults]]
 
     schema = db_schemas.TargetSchema(many=True)
     json_dict = schema.dump([x.Target for x in res])
@@ -244,11 +250,21 @@ def api_get_user_targets():
     for obj in json_dict:
         for single_res in res:
             if obj["id"] == single_res.Target.id:
-                obj["active"] = 'yes' if single_res.active else 'no'
+                obj["active"] = 'yes' if single_res.ScanOrder.active else 'no'
 
-    for x in json_dict:
-        x["grade"] = random.choice([chr(ord('A')+i) for i in range(5)])
-        x["expires"] = datetime.date(2020, 1, 1) + datetime.timedelta(days=random.randint(10, 500))
+                cert_info = single_res.ScanResults.certificate_information
+
+                certificates_in_received_chain: List[db_models.Certificate] = db_models.Certificate.select_from_list(
+                    cert_info.received_certificate_chain_list.chain)
+                obj["expires"] = min([x.notAfter for x in certificates_in_received_chain])
+
+                certificates_in_verified_chain: List[db_models.Certificate] = db_models.Certificate.select_from_list(
+                    cert_info.verified_certificate_chain_list.chain)
+                obj["grade"] = "A" if len(certificates_in_verified_chain) else "F"
+
+    # for x in json_dict:
+    #     x["grade"] = random.choice([chr(ord('A')+i) for i in range(5)])
+    #     x["expires"] = datetime.date(2020, 1, 1) + datetime.timedelta(days=random.randint(10, 500))
 
     json_string = json.dumps(json_dict, default=str)
     # logger.debug(json_string)
