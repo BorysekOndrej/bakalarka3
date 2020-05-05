@@ -233,11 +233,10 @@ def api_get_user_targets():
     jwt = flask_jwt_extended.get_jwt_identity()
     # logger.debug(jwt)
 
-    # todo: priority: sort out non existent scan result. Outer join?
     res = db_models.db.session \
         .query(db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults) \
+        .outerjoin(db_models.ScanResults, db_models.LastScan.result_id == db_models.ScanResults.id)\
         .filter(db_models.LastScan.target_id == db_models.Target.id) \
-        .filter(db_models.LastScan.result_id == db_models.ScanResults.id) \
         .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
         .filter(db_models.ScanOrder.user_id == jwt["id"]) \
         .all()
@@ -251,6 +250,11 @@ def api_get_user_targets():
         for single_res in res:
             if obj["id"] == single_res.Target.id:
                 obj["active"] = 'yes' if single_res.ScanOrder.active else 'no'
+
+                obj["expires"] = "Not scanned yet"
+                obj["grade"] = "Not scanned yet"
+                if single_res.ScanResults is None:
+                    continue
 
                 cert_info = single_res.ScanResults.certificate_information
 
