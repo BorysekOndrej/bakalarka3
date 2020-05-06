@@ -72,4 +72,13 @@ class SslyzeConfig(object):
 
 
 class CacheConfig(object):
-    enabled = False # currently no cache implemented. Do NOT enable
+    enabled = False  # currently no cache implemented. Do NOT enable
+
+
+class MailConfig(object):
+    enabled = False
+    hostname = "localhost"
+    port = 1025
+    username = "lorem"
+    password = "ipsum"
+    sender_email = "test1@example.com"

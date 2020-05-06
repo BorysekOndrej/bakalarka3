@@ -186,3 +186,10 @@ def test_get_or_create_or_update_by_unique():
     target1 = {"hostname": "lorem.borysek.eu"}
     db_utils.get_or_create_or_update_by_unique(db_models.Target, **target1)
     return "done", 200
+
+
+@bp.route('/test_sending_notifications/<int:target_id>', methods=['GET'])
+def test_sending_notifications(target_id):
+    import app.utils.notifications_general as notifications_general
+    notifications_general.schedule_notifications([target_id])
+    return "done", 200
