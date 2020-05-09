@@ -358,6 +358,7 @@ def api_get_basic_cert_info_for_target(target_id):
 
 @bp.route('/notification_settings', methods=['GET', 'POST'])
 @bp.route('/notification_settings/<int:user_id>', methods=['GET', 'POST'])
+@bp.route('/notification_settings/<int:user_id>/null', methods=['GET', 'POST'])
 @bp.route('/notification_settings/<int:user_id>/<int:target_id>', methods=['GET', 'POST'])
 @flask_jwt_extended.jwt_required
 def api_notification_settings(user_id=None, target_id=None):
@@ -380,6 +381,9 @@ def api_notification_settings(user_id=None, target_id=None):
     res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.NotificationsSchema,
                                                                    potentialy_new_model,
                                                                    get_only=get_only)
+    if res is None:
+        return "{}", 200
+
     res: db_models.Notifications
     logger.debug(f'notification_settings {user_id} {target_id} {res}')
     return res.preferences, 200
