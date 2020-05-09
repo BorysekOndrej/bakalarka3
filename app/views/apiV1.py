@@ -354,3 +354,32 @@ def api_get_basic_cert_info_for_target(target_id):
             'leaf_subject': list_cert.subject,
             'information_fetched_on': last_scanned_datetime
             }, 200
+
+
+@bp.route('/notification_settings', methods=['GET', 'POST'])
+@bp.route('/notification_settings/<int:user_id>', methods=['GET', 'POST'])
+@bp.route('/notification_settings/<int:user_id>/<int:target_id>', methods=['GET', 'POST'])
+@flask_jwt_extended.jwt_required
+def api_notification_settings(user_id=None, target_id=None):
+    if user_id is None:
+        user_jwt = flask_jwt_extended.get_jwt_identity()
+        user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+
+    if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
+        return "Target either doesn't exist or user is not allowed to see it.", 401
+
+    get_only = request.method == "GET"
+
+    potentialy_new_model = db_models.Notifications()
+    potentialy_new_model.user_id = user_id
+    potentialy_new_model.target_id = target_id
+
+    if not get_only:
+        potentialy_new_model.preferences = json.loads(request.data)
+
+    res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.NotificationsSchema,
+                                                                   potentialy_new_model,
+                                                                   get_only=get_only)
+    res: db_models.Notifications
+    logger.debug(f'notification_settings {user_id} {target_id} {res}')
+    return res.preferences, 200
