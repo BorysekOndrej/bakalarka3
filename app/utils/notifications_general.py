@@ -177,7 +177,7 @@ def expiring_notifications(main_data, notification_settings) -> List[Notificatio
 def craft_notification_for_single_event(event_type: EventType, res, pref: dict):
     resulting_notifications = []
     if pref.get("emails_active", False):
-        craft_mail_notification_for_single_event(event_type, res, pref)
+        resulting_notifications.extend(craft_mail_notification_for_single_event(event_type, res, pref))
 
     if pref.get("slack_active", False):  # todo
         pass
