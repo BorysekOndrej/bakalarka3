@@ -170,33 +170,44 @@ def expiring_notifications(main_data, notification_settings) -> List[Notificatio
             continue
         # db_models.ScanOrder, db_models.Target, db_models.User, db_models.Notifications
         final_pref = notification_settings_by_scan_order_id[scan_order_id]
-        notifications_to_send.extend(craft_notification(EventType.ClosingExpiration, single_res, final_pref))
+        notifications_to_send.extend(craft_notification_for_single_event(EventType.ClosingExpiration, single_res, final_pref))
     return notifications_to_send
 
 
-def craft_notification(event_type: EventType, res, pref: dict):
+def craft_notification_for_single_event(event_type: EventType, res, pref: dict):
     resulting_notifications = []
     if pref.get("emails_active", False):
-        emails_list_string = pref.get("emails_list", "")
-        emails_list = emails_list_string.split(";")
-        for single_email in emails_list:
-            if len(single_email) == 0:
-                continue
-
-            # BEGIN SWITCH EVENT TYPES
-            finalized_single_notification = None
-            if event_type == EventType.ClosingExpiration:
-                finalized_single_notification = craft_expiration_email(single_email, res.ScanOrder, pref)
-            if event_type == EventType.AlreadyExpired:  # todo: from here onward support is implemented, however currently there is now way to reach this
-                finalized_single_notification = craft_expiration_email(single_email, res.ScanOrder, pref)
-
-            # END SWITCH EVENT TYPES
-
-            if finalized_single_notification:
-                resulting_notifications.append(finalized_single_notification)
+        craft_mail_notification_for_single_event(event_type, res, pref)
 
     if pref.get("slack_active", False):  # todo
         pass
+
+    return resulting_notifications
+
+
+def craft_mail_notification_for_single_event(event_type: EventType, res, pref: dict):
+    if not pref.get("emails_active", False):
+        return []
+
+    resulting_notifications = []
+
+    emails_list_string = pref.get("emails_list", "")
+    emails_list = emails_list_string.split(";")
+    for single_email in emails_list:
+        if len(single_email) == 0:
+            continue
+
+        # BEGIN SWITCH EVENT TYPES
+        finalized_single_notification = None
+        if event_type == EventType.ClosingExpiration:
+            finalized_single_notification = craft_expiration_email(single_email, res.ScanOrder, pref)
+        if event_type == EventType.AlreadyExpired:  # todo: from here onward support is implemented, however currently there is now way to reach this
+            finalized_single_notification = craft_expiration_email(single_email, res.ScanOrder, pref)
+
+        # END SWITCH EVENT TYPES
+
+        if finalized_single_notification:
+            resulting_notifications.append(finalized_single_notification)
 
     return resulting_notifications
 
