@@ -143,13 +143,18 @@ def expiring_notifications():
                 if len(single_email) == 0:
                     continue
                 finalized_noti = craft_expiration_email(single_email, single_res.ScanOrder, final_pref)
-                notifications_to_send.append(finalized_noti)
+                if finalized_noti:
+                    notifications_to_send.append(finalized_noti)
 
     return notifications_to_send
 
 
 def craft_expiration_email(recipient_email, scan_order: db_models.ScanOrder, notification_pref: dict):
-    user = scan_order.user
+    if not notification_pref.get("emails_active", False):
+        logger.warning("craft_expiration_email reached even when emails_active is not active")
+        return None
+
+    # user = scan_order.user
     target = scan_order.target
     last_scan: db_models.LastScan = db_models.db.session \
         .query(db_models.LastScan)\
