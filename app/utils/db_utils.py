@@ -29,7 +29,7 @@ def get_one_or_create(model,
             app.db.session.commit()
             return created, False
         except IntegrityError:
-            app.db.rollback()
+            app.db.session.rollback()
             return app.db.session.query(model).filter_by(**kwargs).one(), True
 
 
@@ -83,8 +83,11 @@ def get_search_by(model: app.db.Model, kwargs: dict) -> Tuple[dict, dict]:
     return kwargs, search_by
 
 
-def get_or_create_by_unique(model: app.db.Model, kwargs: dict, search_by: dict, get_only=False)\
+def get_or_create_by_unique(model: app.db.Model, kwargs: dict, search_by: Optional[dict] = None, get_only=False)\
         -> Tuple[app.db.Model, bool]:
+    if search_by is None:
+        _, search_by = get_search_by(model, kwargs)
+
     logger.debug(f"get_or_create_or_update_by_unique searching model {model} by {search_by}")
 
     if config.CacheConfig.enabled:
