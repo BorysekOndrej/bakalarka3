@@ -193,3 +193,10 @@ def test_sending_notifications(target_id):
     import app.utils.notifications_general as notifications_general
     notifications_general.schedule_notifications([target_id])
     return "done", 200
+
+
+@bp.route('/test_notifications_scheduler/', methods=['GET'])
+def test_notifications_scheduler():
+    import app.utils.notifications_general as notifications_general
+    notifications_general.get_data_for_notifications_scheduler()
+    return "done", 200

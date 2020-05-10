@@ -1,11 +1,13 @@
 import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Set
 
 import app.utils.notifications_mail as notifications_mail
 import app.db_models as db_models
 
 from loguru import logger
+
+import config
 
 
 class Channels (Enum):
@@ -68,73 +70,94 @@ class MailNotification(Notification):
 #
 #     return res_old, res_new
 
-
-def schedule_notifications(changed_targets):
-    all_notification = []
-    all_notification.extend(expiring_notifications())
-    return send_notifications(all_notification)
-
-
-def expiring_notifications():
-    # expiring can't be easily selected, chain needs in-python deserialization
-
-    res_all_active_based_on_scanorder = db_models.db.session \
-        .query(db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults) \
-        .filter(db_models.LastScan.result_id == db_models.ScanResults.id) \
-        .filter(db_models.LastScan.target_id == db_models.Target.id) \
-        .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
+def get_scan_data_for_notifications_scheduler():
+    res_all_active = db_models.db.session \
+        .query(db_models.ScanOrder,
+               db_models.Target,
+               db_models.LastScan,
+               db_models.ScanResults) \
         .filter(db_models.ScanOrder.active == True) \
+        .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
+        .filter(db_models.LastScan.target_id == db_models.Target.id) \
+        .filter(db_models.LastScan.result_id == db_models.ScanResults.id) \
         .all()
 
-    expiring_scan_order_ids = [1]
+    return res_all_active
 
-    for single_res in res_all_active_based_on_scanorder:
-        cert_info = single_res.ScanResults.certificate_information
 
-        certificates_in_received_chain: List[db_models.Certificate] = db_models.Certificate.select_from_list(
-            cert_info.received_certificate_chain_list.chain)
-        expires = min([x.notAfter for x in certificates_in_received_chain])
+def get_notification_settings_for_notifications_scheduler(user_ids: Set[int]) -> List[db_models.Notifications]:
+    notifications_settings_for_users = db_models.db.session \
+        .query(db_models.Notifications) \
+        .filter(db_models.Notifications.user_id.in_(list(user_ids))) \
+        .all()
+    return notifications_settings_for_users
 
+
+def schedule_notifications(changed_targets):
+    main_data = get_scan_data_for_notifications_scheduler()  # ScanOrder, Target, LastScan, ScanResults, User, Notifications
+    users_with_active_scan_orders = set([res.ScanOrder.user_id for res in main_data])
+    notification_settings = get_notification_settings_for_notifications_scheduler(users_with_active_scan_orders)
+
+    all_new_notifications = []
+
+    all_new_notifications.extend(expiring_notifications(main_data, notification_settings))
+
+    return send_notifications(all_new_notifications)
+
+
+def expiring_notifications(main_data, notification_settings):
+    expiration_by_target_id = {}
+    notification_settings_by_scan_order_id = {}
+
+    for single_res in main_data:
+        key = single_res.Target.id
+        val = single_res.ScanResults.certificate_information.received_certificate_chain_list.not_after()
+        expiration_by_target_id[key] = val
+
+    for single_res in main_data:
+        key = single_res.ScanOrder.id
+        user_id = single_res.ScanOrder.user_id
+        target_id = single_res.ScanOrder.target_id
+
+        val1 = list(filter(lambda x: x.user_id == user_id and
+                                     (x.target_id is None or x.target_id == target_id),
+                           notification_settings))
+
+        user_level_notification_obj = list(filter(lambda x: x.target_id is None, val1))
+        target_level_notification_obj = list(filter(lambda x: x.target_id == target_id, val1))
+
+        user_level_settings = user_level_notification_obj[0].preferences if user_level_notification_obj else {}
+        target_level_settings = target_level_notification_obj[0].preferences if target_level_notification_obj else {}
+
+        final_settings = merge_notification_preferences(user_level_settings, target_level_settings)
+
+        notification_settings_by_scan_order_id[key] = final_settings
+
+    expiring_scan_order_ids = set()
+
+    for single_res in main_data:
+        scan_order_id = single_res.ScanOrder.id
+        user_id = single_res.ScanOrder.target_id
+
+        expires = expiration_by_target_id[target_id]
+        notification_settings = notification_settings_by_scan_order_id[scan_order_id]
+
+        # todo: make filtering based on notification settings. Currently notifying about 1 day expire only
         if expires < datetime.datetime.now():
             continue
-        if expires > datetime.datetime.now() + datetime.timedelta(days=1):
+        if expires > datetime.datetime.now() + datetime.timedelta(days=config.NotificationsConfig.start_sending_notifications_x_days_before_expiration):
             continue
-        expiring_scan_order_ids.append(single_res.ScanOrder.id)
+        expiring_scan_order_ids.add(single_res.ScanOrder.id)
 
     logger.info(f"Expiring scan orders ids: {expiring_scan_order_ids}")
 
-    res_target_specific_notifications = db_models.db.session \
-        .query(db_models.ScanOrder, db_models.Target, db_models.User, db_models.Notifications) \
-        .filter(db_models.Notifications.user_id == db_models.User.id) \
-        .filter(db_models.Notifications.target_id == db_models.Target.id) \
-        .filter(db_models.ScanOrder.user_id == db_models.User.id) \
-        .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
-        .filter(db_models.ScanOrder.active == True) \
-        .filter(db_models.ScanOrder.id.in_(expiring_scan_order_ids)) \
-        .all()
-
-    user_ids_to_receive_notifications = set()
-    for x in res_all_active_based_on_scanorder:
-        if x.ScanOrder.id not in expiring_scan_order_ids:
-            continue
-        user_ids_to_receive_notifications.add(x.ScanOrder.user_id)
-
-    res_not_target_specific_notifications = db_models.db.session \
-        .query(db_models.Notifications) \
-        .filter(db_models.Notifications.user_id.in_(list(user_ids_to_receive_notifications))) \
-        .filter(db_models.Notifications.target_id == None) \
-        .all()
-
-    user_level_settings_dict = {}
-    for x in res_not_target_specific_notifications:
-        user_level_settings_dict[x.user_id] = x.preferences
-
     notifications_to_send = []
 
-    for single_res in res_target_specific_notifications:
+    for single_res in main_data:
+        if single_res.ScanOrder.id not in expiring_scan_order_ids:
+            continue
         # db_models.ScanOrder, db_models.Target, db_models.User, db_models.Notifications
-        noti: db_models.Notifications = single_res.Notifications
-        final_pref = merge_notification_preferences(user_level_settings_dict.get(noti.user_id, {}), noti.preferences)
+        final_pref = notification_settings_by_scan_order_id[scan_order_id]
 
         if final_pref.get("emails_active", False):
             emails_list_string = final_pref.get("emails_list", "")

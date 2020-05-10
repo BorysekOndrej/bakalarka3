@@ -75,6 +75,10 @@ class CacheConfig(object):
     enabled = False  # currently no cache implemented. Do NOT enable
 
 
+class NotificationsConfig(object):
+    start_sending_notifications_x_days_before_expiration = 1000  # this is currently here before better scheduler is implemented
+
+
 class MailConfig(object):
     enabled = False
     hostname = "localhost"
