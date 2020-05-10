@@ -179,8 +179,8 @@ def craft_notification_for_single_event(event_type: EventType, res, pref: dict):
     if pref.get("emails_active", False):
         resulting_notifications.extend(craft_mail_notification_for_single_event(event_type, res, pref))
 
-    if pref.get("slack_active", False):  # todo
-        pass
+    if pref.get("slack_active", False):
+        resulting_notifications.extend(craft_slack_notification_for_single_event(event_type, res, pref))
 
     return resulting_notifications
 
@@ -210,6 +210,14 @@ def craft_mail_notification_for_single_event(event_type: EventType, res, pref: d
             resulting_notifications.append(finalized_single_notification)
 
     return resulting_notifications
+
+
+def craft_slack_notification_for_single_event(event_type: EventType, res, pref: dict):
+    if not pref.get("slack_active", False):
+        return []
+    resulting_notifications = []
+    logger.info('Slack notifications are not yet supported.')
+    return resulting_notifications  # todo
 
 
 def craft_expiration_email(recipient_email, scan_order: db_models.ScanOrder, notification_pref: dict):
@@ -246,5 +254,5 @@ def send_notifications(planned_notifications: Optional[List[Notification]] = Non
         if x.channel == Channels.Mail:
             x: MailNotification
             notifications_mail.send_mail(x.recipient_email, x.subject, x.formatted_text)
-    # notifications_mail.send_mail("contact+bakalarka@borysek.net", "Subject1", "Body1")
-
+        if x.channel == Channels.Slack:
+            pass  # todo
