@@ -76,8 +76,8 @@ class MailNotification(Notification):
 #
 #     return res_old, res_new
 
-def get_scan_data_for_notifications_scheduler():
-    res_all_active = db_models.db.session \
+def get_scan_data_for_notifications_scheduler(limit_to_following_target_ids: Optional[List[int]] = None):
+    qry = db_models.db.session \
         .query(db_models.ScanOrder,
                db_models.Target,
                db_models.LastScan,
@@ -86,8 +86,12 @@ def get_scan_data_for_notifications_scheduler():
         .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
         .filter(db_models.LastScan.target_id == db_models.Target.id) \
         .filter(db_models.LastScan.result_id == db_models.ScanResults.id) \
-        .all()
 
+    if limit_to_following_target_ids:
+        deduplicated_target_ids = list(set(limit_to_following_target_ids))
+        qry = qry.filter(db_models.Target.id.in_(deduplicated_target_ids))
+
+    res_all_active = qry.all()
     return res_all_active
 
 
@@ -99,8 +103,11 @@ def get_notification_settings_for_notifications_scheduler(user_ids: Set[int]) ->
     return notifications_settings_for_users
 
 
-def schedule_notifications(changed_targets):
-    main_data = get_scan_data_for_notifications_scheduler()  # ScanOrder, Target, LastScan, ScanResults, User, Notifications
+def schedule_notifications(limit_to_following_target_ids: Optional[List[int]] = None):
+    # Param limit_to_following_targets is used when we want to imediately send notifications on completed scan.
+
+    main_data = get_scan_data_for_notifications_scheduler(limit_to_following_target_ids)
+    # ScanOrder, Target, LastScan, ScanResults, User, Notifications
     users_with_active_scan_orders = set([res.ScanOrder.user_id for res in main_data])
     notification_settings = get_notification_settings_for_notifications_scheduler(users_with_active_scan_orders)
 
