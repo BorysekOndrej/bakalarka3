@@ -740,3 +740,16 @@ class ScanResultsHistory(Base, UniqueModel):
 
     scanresult_id = db.Column(db.Integer, db.ForeignKey('scanresults.id'), nullable=False)
     scanresult = db.relationship("ScanResults")
+
+
+class SentNotificationsLog(Base, UniqueModel):
+    __tablename__ = 'notificationssentlog'
+    __uniqueColumns__ = ['sent_notification_id', 'channel']
+    __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    timestamp = db.Column(NumericTimestamp, default=datetime_to_timestamp(datetime.datetime.now()))
+
+    sent_notification_id = db.Column(db.String, nullable=False)
+    channel = db.Column(db.String, nullable=False)

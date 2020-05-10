@@ -8,6 +8,7 @@ import app.db_models as db_models
 from loguru import logger
 
 import config
+import app.utils.db_utils as db_utils
 
 
 class Channels (Enum):
@@ -285,7 +286,15 @@ def send_notifications(planned_notifications: Optional[List[Notification]] = Non
     for x in planned_notifications:
         if x.channel == Channels.Mail:
             x: MailNotification
-            notifications_mail.send_mail(x.recipient_email, x.subject, x.formatted_text)
+            log_dict = {
+                "sent_notification_id": x.event_id,
+                "channel": x.channel.value
+            }
+            res = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict, get_only=True)
+            if res is None:
+                notifications_mail.send_mail(x.recipient_email, x.subject, x.formatted_text)
+                res = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict)
+
         if x.channel == Channels.Slack:
             pass  # todo
 
