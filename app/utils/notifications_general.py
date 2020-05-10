@@ -187,6 +187,8 @@ def craft_notification(event_type: EventType, res, pref: dict):
             finalized_single_notification = None
             if event_type == EventType.ClosingExpiration:
                 finalized_single_notification = craft_expiration_email(single_email, res.ScanOrder, pref)
+            if event_type == EventType.AlreadyExpired:  # todo: from here onward support is implemented, however currently there is now way to reach this
+                finalized_single_notification = craft_expiration_email(single_email, res.ScanOrder, pref)
 
             # END SWITCH EVENT TYPES
 
@@ -217,6 +219,8 @@ def craft_expiration_email(recipient_email, scan_order: db_models.ScanOrder, not
     res.recipient_email = recipient_email
 
     res.subject = f"Certificate expiration notification ({target}) - {days_remaining} days remaining"
+    if days_remaining < 0:
+        res.subject = f"Certificate expiration notification ({target}) - Expired days {days_remaining} ago"
 
     # todo: use flask templating
     res.plain_text = res.subject  # todo
