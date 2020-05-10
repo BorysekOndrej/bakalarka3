@@ -13,10 +13,32 @@ class Channels (Enum):
     Slack = 2
 
 
+def merge_notification_preferences(more_general: dict, more_specific: dict) -> dict:
+    preference_merge_strategy = more_specific.get("preference_merge_strategy", "classic")
+    if preference_merge_strategy == "classic":
+        return {**more_general, **more_specific}
+    if preference_merge_strategy == "more_general_only":
+        return more_general
+    if preference_merge_strategy == "more_specific_only":
+        return more_specific
+
+    logger.warning("Unknown preference_merge_strategy. Overriding to classic.")
+    return {**more_general, **more_specific}
+
+
 class Notification(object):
-    def __init__(self, channels: Optional[List[Channels]] = None, text: str = None):
-        self.channel: List[Channels] = channels if channels else []
-        self.text: str = text if text else ""
+    def __init__(self, channel: Channels, plain_text: Optional[str] = None):
+        self.event_id: int = None  # this is so that we can match Slack and Mail notification for the same event
+        self.channel: Channels = channel
+        self.plain_text: str = plain_text if plain_text else ""
+
+
+class MailNotification(Notification):
+    def __init__(self):
+        super().__init__(Channels.Mail)
+        self.recipient_email: str = None
+        self.subject: str = None
+        self.formatted_text: str = None
 
 
 # def get_res_old_and_new(changed_targets):
@@ -103,14 +125,56 @@ def expiring_notifications():
         .filter(db_models.Notifications.target_id == None) \
         .all()
 
-    notification1 = Notification(Channels.Mail, "Subject1")
+    user_level_settings_dict = {}
+    for x in res_not_target_specific_notifications:
+        user_level_settings_dict[x.user_id] = x.preferences
 
-    return [notification1]
+    notifications_to_send = []
+
+    for single_res in res_target_specific_notifications:
+        # db_models.ScanOrder, db_models.Target, db_models.User, db_models.Notifications
+        noti: db_models.Notifications = single_res.Notifications
+        final_pref = merge_notification_preferences(user_level_settings_dict.get(noti.user_id, {}), noti.preferences)
+
+        if final_pref.get("emails_active", False):
+            emails_list_string = final_pref.get("emails_list", "")
+            emails_list = emails_list_string.split(";")
+            for single_email in emails_list:
+                if len(single_email) == 0:
+                    continue
+                finalized_noti = craft_expiration_email(single_email, single_res.ScanOrder, final_pref)
+                notifications_to_send.append(finalized_noti)
+
+    return notifications_to_send
+
+
+def craft_expiration_email(recipient_email, scan_order: db_models.ScanOrder, notification_pref: dict):
+    user = scan_order.user
+    target = scan_order.target
+    last_scan: db_models.LastScan = db_models.db.session \
+        .query(db_models.LastScan)\
+        .filter(db_models.LastScan.target_id == target.id)\
+        .one()
+    not_after = last_scan.result.certificate_information.received_certificate_chain_list.not_after()
+    days_remaining = (not_after - datetime.datetime.now()).days
+
+    res = MailNotification()
+    res.recipient_email = recipient_email
+
+    res.subject = f"Certificate expiration notification ({target}) - {days_remaining} days remaining"
+
+    # todo: use flask templating
+    res.plain_text = res.subject  # todo
+    res.formatted_text = res.subject  # todo
+    return res
 
 
 def send_notifications(planned_notifications: Optional[List[Notification]] = None):
     if planned_notifications is None:
         planned_notifications = []
     for x in planned_notifications:
-        pass
-    notifications_mail.send_mail("contact+bakalarka@borysek.net", "Subject1", "Body1")
+        if x.channel == Channels.Mail:
+            x: MailNotification
+            notifications_mail.send_mail(x.recipient_email, x.subject, x.formatted_text)
+    # notifications_mail.send_mail("contact+bakalarka@borysek.net", "Subject1", "Body1")
+

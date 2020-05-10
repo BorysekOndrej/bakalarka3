@@ -553,6 +553,12 @@ class CertificateChain(Base, UniqueModel):
     def from_list(chain):
         return CertificateChain.from_string(",".join(str(x) for x in chain))
 
+    def not_after(self):
+        return min([x.notAfter for x in Certificate.select_from_list(self.chain)])
+
+    def not_before(self):
+        return max([x.notBefore for x in Certificate.select_from_list(self.chain)])
+
 
 class HTTPSecurityHeaders(Base, UniqueModel):
     __tablename__ = 'httpsecurityheaders'
