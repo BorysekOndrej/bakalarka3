@@ -105,14 +105,8 @@ def schedule_notifications(changed_targets):
     return send_notifications(all_new_notifications)
 
 
-def expiring_notifications(main_data, notification_settings):
-    expiration_by_target_id = {}
+def make_dict_notification_settings_by_scan_order_id(main_data, notification_settings):
     notification_settings_by_scan_order_id = {}
-
-    for single_res in main_data:
-        key = single_res.Target.id
-        val = single_res.ScanResults.certificate_information.received_certificate_chain_list.not_after()
-        expiration_by_target_id[key] = val
 
     for single_res in main_data:
         key = single_res.ScanOrder.id
@@ -133,11 +127,23 @@ def expiring_notifications(main_data, notification_settings):
 
         notification_settings_by_scan_order_id[key] = final_settings
 
+    return notification_settings_by_scan_order_id
+
+
+def expiring_notifications(main_data, notification_settings):
+    expiration_by_target_id = {}
+    notification_settings_by_scan_order_id = make_dict_notification_settings_by_scan_order_id(main_data, notification_settings)
+
+    for single_res in main_data:
+        key = single_res.Target.id
+        val = single_res.ScanResults.certificate_information.received_certificate_chain_list.not_after()
+        expiration_by_target_id[key] = val
+
     expiring_scan_order_ids = set()
 
     for single_res in main_data:
         scan_order_id = single_res.ScanOrder.id
-        user_id = single_res.ScanOrder.target_id
+        target_id = single_res.ScanOrder.target_id
 
         expires = expiration_by_target_id[target_id]
         notification_settings = notification_settings_by_scan_order_id[scan_order_id]
