@@ -207,9 +207,9 @@ def craft_mail_notification_for_single_event(event_type: EventType, res, pref: d
         # BEGIN SWITCH EVENT TYPES
         finalized_single_notification = None
         if event_type == EventType.ClosingExpiration:
-            finalized_single_notification = craft_expiration_email(single_email, res.ScanOrder, pref)
+            finalized_single_notification = craft_expiration_email(single_email, res, pref)
         if event_type == EventType.AlreadyExpired:  # todo: from here onward support is implemented, however currently there is now way to reach this
-            finalized_single_notification = craft_expiration_email(single_email, res.ScanOrder, pref)
+            finalized_single_notification = craft_expiration_email(single_email, res, pref)
 
         # END SWITCH EVENT TYPES
 
@@ -227,25 +227,33 @@ def craft_slack_notification_for_single_event(event_type: EventType, res, pref: 
     return resulting_notifications  # todo
 
 
-def craft_expiration_email(recipient_email, scan_order: db_models.ScanOrder, notification_pref: dict):
+def expiration_event_id_generator(scan_order, event_type, certificate_chain, days_remaining):
+    return f'{scan_order.id};{event_type};{certificate_chain.id};{days_remaining}'
+
+
+def craft_expiration_email(recipient_email, res, notification_pref: dict):
     if not notification_pref.get("emails_active", False):
         logger.warning("craft_expiration_email reached even when emails_active is not active")
         return None
 
+    scan_order: db_models.ScanOrder = res.ScanOrder
+
     # user = scan_order.user
     target = scan_order.target
-    last_scan: db_models.LastScan = db_models.db.session \
-        .query(db_models.LastScan)\
-        .filter(db_models.LastScan.target_id == target.id)\
-        .one()
-    not_after = last_scan.result.certificate_information.received_certificate_chain_list.not_after()
+    last_scan = res.LastScan
+    certificate_chain = last_scan.result.certificate_information.received_certificate_chain_list
+    not_after = certificate_chain.not_after()
     days_remaining = (not_after - datetime.datetime.now()).days
 
+    event_type = EventType.ClosingExpiration if days_remaining >= 0 else EventType.AlreadyExpired
+
     res = MailNotification()
+    res.id = expiration_event_id_generator(scan_order.id, event_type, certificate_chain.id, days_remaining)
     res.recipient_email = recipient_email
 
-    res.subject = f"Certificate expiration notification ({target}) - {days_remaining} days remaining"
-    if days_remaining < 0:
+    if event_type.ClosingExpiration:
+        res.subject = f"Certificate expiration notification ({target}) - {days_remaining} days remaining"
+    else:
         res.subject = f"Certificate expiration notification ({target}) - Expired days {days_remaining} ago"
 
     # todo: use flask templating
