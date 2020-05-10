@@ -185,6 +185,8 @@ def expiring_notifications(main_data, notification_settings) -> List[Notificatio
     notifications_to_send = []
 
     for single_res in main_data:
+        scan_order_id = single_res.ScanOrder.id
+
         event_type = None
         if single_res.ScanOrder.id in scan_order_ids_expired:
             event_type = EventType.AlreadyExpired
