@@ -15,6 +15,12 @@ class Channels (Enum):
     Slack = 2
 
 
+class EventType (Enum):
+    ClosingExpiration = 1
+    AlreadyExpired = 2
+    GradeLowered = 3
+
+
 def merge_notification_preferences(more_general: dict, more_specific: dict) -> dict:
     preference_merge_strategy = more_specific.get("preference_merge_strategy", "classic")
     if preference_merge_strategy == "classic":
@@ -130,7 +136,7 @@ def make_dict_notification_settings_by_scan_order_id(main_data, notification_set
     return notification_settings_by_scan_order_id
 
 
-def expiring_notifications(main_data, notification_settings):
+def expiring_notifications(main_data, notification_settings) -> List[Notification]:
     expiration_by_target_id = {}
     notification_settings_by_scan_order_id = make_dict_notification_settings_by_scan_order_id(main_data, notification_settings)
 
@@ -164,18 +170,33 @@ def expiring_notifications(main_data, notification_settings):
             continue
         # db_models.ScanOrder, db_models.Target, db_models.User, db_models.Notifications
         final_pref = notification_settings_by_scan_order_id[scan_order_id]
-
-        if final_pref.get("emails_active", False):
-            emails_list_string = final_pref.get("emails_list", "")
-            emails_list = emails_list_string.split(";")
-            for single_email in emails_list:
-                if len(single_email) == 0:
-                    continue
-                finalized_noti = craft_expiration_email(single_email, single_res.ScanOrder, final_pref)
-                if finalized_noti:
-                    notifications_to_send.append(finalized_noti)
-
+        notifications_to_send.extend(craft_notification(EventType.ClosingExpiration, single_res, final_pref))
     return notifications_to_send
+
+
+def craft_notification(event_type: EventType, res, pref: dict):
+    resulting_notifications = []
+    if pref.get("emails_active", False):
+        emails_list_string = pref.get("emails_list", "")
+        emails_list = emails_list_string.split(";")
+        for single_email in emails_list:
+            if len(single_email) == 0:
+                continue
+
+            # BEGIN SWITCH EVENT TYPES
+            finalized_single_notification = None
+            if event_type == EventType.ClosingExpiration:
+                finalized_single_notification = craft_expiration_email(single_email, res.ScanOrder, pref)
+
+            # END SWITCH EVENT TYPES
+
+            if finalized_single_notification:
+                resulting_notifications.append(finalized_single_notification)
+
+    if pref.get("slack_active", False):  # todo
+        pass
+
+    return resulting_notifications
 
 
 def craft_expiration_email(recipient_email, scan_order: db_models.ScanOrder, notification_pref: dict):
