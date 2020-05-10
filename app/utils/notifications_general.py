@@ -152,7 +152,8 @@ def expiring_notifications(main_data, notification_settings) -> List[Notificatio
         val = single_res.ScanResults.certificate_information.received_certificate_chain_list.not_after()
         expiration_by_target_id[key] = val
 
-    expiring_scan_order_ids = set()
+    scan_order_ids_expired = set()
+    scan_order_ids_nearing_expiration = set()
 
     for single_res in main_data:
         scan_order_id = single_res.ScanOrder.id
@@ -163,21 +164,45 @@ def expiring_notifications(main_data, notification_settings) -> List[Notificatio
 
         # todo: make filtering based on notification settings. Currently notifying about 1 day expire only
         if expires < datetime.datetime.now():
+            scan_order_ids_expired.add(single_res.ScanOrder.id)
             continue
         if expires > datetime.datetime.now() + datetime.timedelta(days=config.NotificationsConfig.start_sending_notifications_x_days_before_expiration):
             continue
-        expiring_scan_order_ids.add(single_res.ScanOrder.id)
 
-    logger.info(f"Expiring scan orders ids: {expiring_scan_order_ids}")
+        notifications_x_days_before_expiration_string =\
+            notification_settings.get("notifications_x_days_before_expiration",
+                                      config.NotificationsConfig.default_pre_expiration_periods_in_days)
+        notifications_x_days_before_expiration_list_of_strings = notifications_x_days_before_expiration_string.split(",")
+        notifications_x_days_before_expiration = set()
+        for x in notifications_x_days_before_expiration_list_of_strings:
+            if x:
+                notifications_x_days_before_expiration.add(int(x))
+
+        certificate_chain = single_res.LastScan.result.certificate_information.received_certificate_chain_list
+        not_after = certificate_chain.not_after()
+        days_remaining = (not_after - datetime.datetime.now()).days
+
+        if days_remaining in notifications_x_days_before_expiration:
+            scan_order_ids_nearing_expiration.add(single_res.ScanOrder.id)
+
+    logger.info(f"scan_order_ids_expired orders ids: {scan_order_ids_expired}")
+    logger.info(f"scan_order_ids_nearing_expiration ids: {scan_order_ids_nearing_expiration}")
 
     notifications_to_send = []
 
     for single_res in main_data:
-        if single_res.ScanOrder.id not in expiring_scan_order_ids:
+        event_type = None
+        if single_res.ScanOrder.id in scan_order_ids_expired:
+            event_type = EventType.AlreadyExpired
+        elif single_res.ScanOrder.id in scan_order_ids_nearing_expiration:
+            event_type = EventType.ClosingExpiration
+
+        if event_type is None:
             continue
-        # db_models.ScanOrder, db_models.Target, db_models.User, db_models.Notifications
+
         final_pref = notification_settings_by_scan_order_id[scan_order_id]
-        notifications_to_send.extend(craft_notification_for_single_event(EventType.ClosingExpiration, single_res, final_pref))
+        notifications_to_send.extend(craft_notification_for_single_event(event_type, single_res, final_pref))
+
     return notifications_to_send
 
 
@@ -208,7 +233,7 @@ def craft_mail_notification_for_single_event(event_type: EventType, res, pref: d
         finalized_single_notification = None
         if event_type == EventType.ClosingExpiration:
             finalized_single_notification = craft_expiration_email(single_email, res, pref)
-        if event_type == EventType.AlreadyExpired:  # todo: from here onward support is implemented, however currently there is now way to reach this
+        if event_type == EventType.AlreadyExpired:
             finalized_single_notification = craft_expiration_email(single_email, res, pref)
 
         # END SWITCH EVENT TYPES
@@ -248,7 +273,7 @@ def craft_expiration_email(recipient_email, res, notification_pref: dict):
     event_type = EventType.ClosingExpiration if days_remaining >= 0 else EventType.AlreadyExpired
 
     res = MailNotification()
-    res.id = expiration_event_id_generator(scan_order.id, event_type, certificate_chain.id, days_remaining)
+    res.id = expiration_event_id_generator(scan_order, event_type, certificate_chain, days_remaining)
     res.recipient_email = recipient_email
 
     if event_type.ClosingExpiration:

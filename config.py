@@ -77,6 +77,8 @@ class CacheConfig(object):
 
 class NotificationsConfig(object):
     start_sending_notifications_x_days_before_expiration = 1000  # this is currently here before better scheduler is implemented
+    #default_pre_expiration_periods_in_days = "1,7,14,30"
+    default_pre_expiration_periods_in_days = "1,7,14,30,151"
 
 
 class MailConfig(object):
