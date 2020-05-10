@@ -169,14 +169,8 @@ def expiring_notifications(main_data, notification_settings) -> List[Notificatio
         if expires > datetime.datetime.now() + datetime.timedelta(days=config.NotificationsConfig.start_sending_notifications_x_days_before_expiration):
             continue
 
-        notifications_x_days_before_expiration_string =\
-            notification_settings.get("notifications_x_days_before_expiration",
-                                      config.NotificationsConfig.default_pre_expiration_periods_in_days)
-        notifications_x_days_before_expiration_list_of_strings = notifications_x_days_before_expiration_string.split(",")
-        notifications_x_days_before_expiration = set()
-        for x in notifications_x_days_before_expiration_list_of_strings:
-            if x:
-                notifications_x_days_before_expiration.add(int(x))
+        notifications_x_days_before_expiration\
+            = extract_and_parse_notifications_x_days_before_expiration(notification_settings)
 
         certificate_chain = single_res.LastScan.result.certificate_information.received_certificate_chain_list
         not_after = certificate_chain.not_after()
@@ -208,27 +202,23 @@ def expiring_notifications(main_data, notification_settings) -> List[Notificatio
 
 def craft_notification_for_single_event(event_type: EventType, res, pref: dict):
     resulting_notifications = []
-    if pref.get("emails_active", False):
+    if extract_emails_active(pref):
         resulting_notifications.extend(craft_mail_notification_for_single_event(event_type, res, pref))
 
-    if pref.get("slack_active", False):
+    if extract_slack_active(pref):
         resulting_notifications.extend(craft_slack_notification_for_single_event(event_type, res, pref))
 
     return resulting_notifications
 
 
 def craft_mail_notification_for_single_event(event_type: EventType, res, pref: dict):
-    if not pref.get("emails_active", False):
+    if not extract_emails_active(pref):
         return []
 
     resulting_notifications = []
 
-    emails_list_string = pref.get("emails_list", "")
-    emails_list = emails_list_string.split(";")
+    emails_list = extract_and_parse_emails_list(pref)
     for single_email in emails_list:
-        if len(single_email) == 0:
-            continue
-
         # BEGIN SWITCH EVENT TYPES
         finalized_single_notification = None
         if event_type == EventType.ClosingExpiration:
@@ -245,7 +235,7 @@ def craft_mail_notification_for_single_event(event_type: EventType, res, pref: d
 
 
 def craft_slack_notification_for_single_event(event_type: EventType, res, pref: dict):
-    if not pref.get("slack_active", False):
+    if not extract_slack_active(pref):
         return []
     resulting_notifications = []
     logger.info('Slack notifications are not yet supported.')
@@ -257,7 +247,7 @@ def expiration_event_id_generator(scan_order, event_type, certificate_chain, day
 
 
 def craft_expiration_email(recipient_email, res, notification_pref: dict):
-    if not notification_pref.get("emails_active", False):
+    if not extract_emails_active(notification_pref):
         logger.warning("craft_expiration_email reached even when emails_active is not active")
         return None
 
@@ -296,3 +286,39 @@ def send_notifications(planned_notifications: Optional[List[Notification]] = Non
             notifications_mail.send_mail(x.recipient_email, x.subject, x.formatted_text)
         if x.channel == Channels.Slack:
             pass  # todo
+
+
+def extract_emails_active(pref) -> bool:
+    return pref.get("emails_active", False)
+
+
+def extract_slack_active(pref: dict) -> bool:
+    return pref.get("slack_active", False)
+
+
+def extract_and_parse_notifications_x_days_before_expiration(pref: dict) -> set:
+    notifications_x_days_before_expiration = set()
+
+    notifications_x_days_before_expiration_string =\
+        pref.get("notifications_x_days_before_expiration",
+                 config.NotificationsConfig.default_pre_expiration_periods_in_days)
+    notifications_x_days_before_expiration_list_of_strings = notifications_x_days_before_expiration_string.split(",")
+
+    for x in notifications_x_days_before_expiration_list_of_strings:
+        if x:
+            notifications_x_days_before_expiration.add(int(x))
+
+    return notifications_x_days_before_expiration
+
+
+def extract_and_parse_emails_list(pref: dict) -> Set[str]:
+    res = set()
+
+    emails_list_string = pref.get("emails_list", "")
+    emails_list = emails_list_string.split(";")
+    for single_email in emails_list:
+        if len(single_email) == 0:
+            continue
+        res.add(single_email[:].strip())
+
+    return res
