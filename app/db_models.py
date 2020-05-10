@@ -710,7 +710,7 @@ class ScanResults(Base, UniqueModel):
 
 
 # Notifications
-class Notifications(Base, UniqueModel):
+class NotificationSettings(Base, UniqueModel):
     __tablename__ = 'notifications'
     __uniqueColumns__ = ['target_id', 'user_id']
     __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)

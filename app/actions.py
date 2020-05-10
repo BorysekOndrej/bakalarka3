@@ -21,11 +21,11 @@ def can_user_get_target_definition_by_id(target_id: int, user_id: int) -> bool:
 
 
 def full_target_settings_to_dict(target: db_models.Target, scan_order: db_models.ScanOrder,
-                                 notifications: db_models.Notifications) -> dict:
+                                 notifications: db_models.NotificationSettings) -> dict:
     return {
         "target": db_schemas.TargetSchema().dump(target),
         "scanOrder": db_schemas.ScanOrderSchema(only=("periodicity", "active")).dump(scan_order),
-        "notifications": db_schemas.NotificationsSchema(only=["preferences"]).dump(notifications).get("preferences", {})
+        "notifications": db_schemas.NotificationSettingsSchema(only=["preferences"]).dump(notifications).get("preferences", {})
     }
 
 

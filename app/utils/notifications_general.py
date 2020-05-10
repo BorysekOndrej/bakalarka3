@@ -96,10 +96,10 @@ def get_scan_data_for_notifications_scheduler(limit_to_following_target_ids: Opt
     return res_all_active
 
 
-def get_notification_settings_for_notifications_scheduler(user_ids: Set[int]) -> List[db_models.Notifications]:
+def get_notification_settings_for_notifications_scheduler(user_ids: Set[int]) -> List[db_models.NotificationSettings]:
     notifications_settings_for_users = db_models.db.session \
-        .query(db_models.Notifications) \
-        .filter(db_models.Notifications.user_id.in_(list(user_ids))) \
+        .query(db_models.NotificationSettings) \
+        .filter(db_models.NotificationSettings.user_id.in_(list(user_ids))) \
         .all()
     return notifications_settings_for_users
 

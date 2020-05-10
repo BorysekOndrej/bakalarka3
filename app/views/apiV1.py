@@ -90,7 +90,7 @@ def api_target_by_id(target_id: int):
                                                                      {"target_id": target.id, "user_id": user_id},
                                                                      get_only=True)
 
-    notifications = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.NotificationsSchema,
+    notifications = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.NotificationSettingsSchema,
                                                                         {"target_id": target.id, "user_id": user_id},
                                                                         get_only=True)
 
@@ -118,7 +118,7 @@ def api_target():
     if data.get("notifications", None):
         notifications_def = db_utils.merge_dict_with_copy_and_overwrite({"preferences": data.get("notifications", {})},
                                                                         {"target_id": target.id, "user_id": user_id})
-        db_utils_advanced.generic_get_create_edit_from_data(db_schemas.NotificationsSchema, notifications_def)
+        db_utils_advanced.generic_get_create_edit_from_data(db_schemas.NotificationSettingsSchema, notifications_def)
 
     return api_target_by_id(target.id)
 
@@ -371,19 +371,19 @@ def api_notification_settings(user_id=None, target_id=None):
 
     get_only = request.method == "GET"
 
-    potentialy_new_model = db_models.Notifications()
+    potentialy_new_model = db_models.NotificationSettings()
     potentialy_new_model.user_id = user_id
     potentialy_new_model.target_id = target_id
 
     if not get_only:
         potentialy_new_model.preferences = json.loads(request.data)
 
-    res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.NotificationsSchema,
+    res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.NotificationSettingsSchema,
                                                                    potentialy_new_model,
                                                                    get_only=get_only)
     if res is None:
         return "{}", 200
 
-    res: db_models.Notifications
+    res: db_models.NotificationSettings
     logger.debug(f'notification_settings {user_id} {target_id} {res}')
     return res.preferences, 200
