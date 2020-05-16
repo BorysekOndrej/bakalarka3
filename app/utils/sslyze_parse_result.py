@@ -4,7 +4,6 @@ import app.db_schemas as db_schemas
 
 # from loguru import logger
 import app.object_models as object_models
-import app.db_models as db_models
 
 logger = app.logger
 
