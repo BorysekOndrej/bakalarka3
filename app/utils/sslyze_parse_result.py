@@ -270,7 +270,7 @@ def run():
     insert_scan_result_into_db(scan_result)
 
 
-def insert_scan_result_into_db(scan_result: dict):
+def insert_scan_result_into_db(scan_result: dict) -> app.db_models.ScanResults:
     obj = app.db_models.ScanResults()
 
     target_dict = json.loads(scan_result.get("target", "{}"))
@@ -345,6 +345,8 @@ def insert_scan_result_into_db(scan_result: dict):
         for plugin_title in to_remove:
             scan_result["results"].pop(plugin_title, None)
         # files.write_to_file("../../tmp/still_to_parse.out.json", json.dumps(scan_result, indent=3))  # todo: fix path
+
+    return obj
 
 
 def update_references_to_scan_result(twe: object_models.TargetWithExtra, scanresult_id: int):

@@ -9,6 +9,7 @@ import app.utils.sslyze_scanner as sslyze_scanner
 import app.utils.sslyze_parse_result as sslyze_parse_result
 
 from config import FlaskConfig
+import app.utils.sslyze_result_simplify as sslyze_result_simplify
 
 
 def can_user_get_target_definition_by_id(target_id: int, user_id: int) -> bool:
@@ -76,7 +77,9 @@ def sslyze_send_scan_results(scan_dict: dict) -> bool:
 
     for single_result_str in results:
         single_result: dict = json.loads(single_result_str)
-        sslyze_parse_result.insert_scan_result_into_db(single_result)
+        scan_result = sslyze_parse_result.insert_scan_result_into_db(single_result)
+        scan_result_simple = sslyze_result_simplify.sslyze_result_simplify(scan_result)
+        db_models.db.session.add(scan_result_simple)
 
     return True
 
