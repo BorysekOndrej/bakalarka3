@@ -387,3 +387,18 @@ def api_notification_settings(user_id=None, target_id=None):
     res: db_models.NotificationSettings
     logger.debug(f'notification_settings {user_id} {target_id} {res}')
     return res.preferences, 200
+
+
+@bp.route('/scan_result_history', methods=['GET'])
+@bp.route('/scan_result_history/<int:x_days>', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def api_scan_result_history(user_id=None, x_days=30):
+    if user_id is None:
+        user_jwt = flask_jwt_extended.get_jwt_identity()
+        user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+
+    res = {}
+    if res is None:
+        return "{}", 200
+
+    return res, 200  # todo
