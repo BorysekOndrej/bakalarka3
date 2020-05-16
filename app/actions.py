@@ -1,3 +1,4 @@
+import datetime
 import json
 from typing import Optional, List, Dict, Tuple
 
@@ -95,3 +96,23 @@ def get_last_scan_and_result(target_id: int, user_id: int) -> Optional[Tuple[db_
         .one()
 
     return scan_result
+
+
+def get_scan_history(user_id: int, x_days: int = 30):  # -> Optional[Tuple[db_models.LastScan, db_models.ScanResults]]:
+    today = datetime.datetime.now()
+    start = today - datetime.timedelta(days=x_days)
+    start_timestamp = db_models.datetime_to_timestamp(start)
+
+    res = db_models.db.session \
+        .query(db_models.ScanOrder, db_models.Target, db_models.ScanResultsHistory, db_models.ScanResultsSimplified) \
+        .outerjoin(db_models.ScanResultsHistory,
+                   db_models.ScanResultsHistory.target_id == db_models.ScanOrder.target_id) \
+        .outerjoin(db_models.ScanResultsSimplified,
+                   db_models.ScanResultsHistory.scanresult_id == db_models.ScanResultsSimplified.id) \
+        .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
+        .filter(db_models.ScanOrder.active == True) \
+        .filter(db_models.ScanOrder.user_id == user_id) \
+        .filter(db_models.ScanResultsHistory.timestamp >= start_timestamp) \
+        .all()
+
+    return res

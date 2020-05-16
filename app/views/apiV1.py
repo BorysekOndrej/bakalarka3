@@ -397,8 +397,22 @@ def api_scan_result_history(user_id=None, x_days=30):
         user_jwt = flask_jwt_extended.get_jwt_identity()
         user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
 
-    res = {}
-    if res is None:
-        return "{}", 200
+    res = actions.get_scan_history(user_id, x_days)
 
-    return res, 200  # todo
+    if res is None:
+        return "[]", 200
+
+    res_arr = []
+    for x in res:
+        new_dict = {
+            "timestamp": None,
+            "target": None,
+            "result_simplified": None,
+        }
+        if x.ScanResultsHistory:
+            new_dict["timestamp"] = x.ScanResultsHistory.timestamp
+        new_dict["target"] = json.loads(db_schemas.TargetSchema().dumps(x.Target))
+        new_dict["result_simplified"] = json.loads(db_schemas.ScanResultsSimplifiedSchema().dumps(x.ScanResultsSimplified))
+        res_arr.append(new_dict)
+
+    return json.dumps(res_arr, indent=3), 200
