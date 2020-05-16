@@ -290,3 +290,13 @@ class LastScanSchema(SQLAlchemyAutoSchema):
 
     target = Nested(TargetSchema)
     result = Nested(ScanResultsSchema)
+
+
+class ScanResultsSimplifiedSchema(SQLAlchemyAutoSchema):
+    class Meta(BaseSchema.Meta):
+        model = app.db_models.ScanResultsSimplified
+        include_relationships = False
+        include_fk = True
+        exclude = ()
+
+    received_certificate_chain_list = Nested(CertificateChainSchema)

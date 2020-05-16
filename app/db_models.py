@@ -638,10 +638,12 @@ class CertificateInformation(Base, UniqueModel):
     ocsp_response_status = db.Column(db.String)
     ocsp_response_is_trusted = db.Column(db.Boolean)
 
+    # todo: this is named list but it seems I'm only using it as single cert chain. Check!!!
     received_certificate_chain_list_id = db.Column(db.Integer, db.ForeignKey('certificatechain.id'))
     received_certificate_chain_list = db.relationship("CertificateChain",
                                                       foreign_keys=[received_certificate_chain_list_id])
 
+    # todo: this is named list but it seems I'm only using it as single cert chain. Check!!!
     verified_certificate_chain_list_id = db.Column(db.Integer, db.ForeignKey('certificatechain.id'))
     verified_certificate_chain_list = db.relationship("CertificateChain",
                                                       foreign_keys=[verified_certificate_chain_list_id])
@@ -753,3 +755,38 @@ class SentNotificationsLog(Base, UniqueModel):
 
     sent_notification_id = db.Column(db.String, nullable=False)
     channel = db.Column(db.String, nullable=False)
+
+
+class ScanResultsSimplified(Base, UniqueModel):
+    __tablename__ = 'scanresultssimplified'
+    __uniqueColumns__ = ['id']
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    notBefore = db.Column(NumericTimestamp)
+    notAfter = db.Column(NumericTimestamp)
+    grade = db.Column(db.String)
+
+    received_certificate_chain_list_id = db.Column(db.Integer, db.ForeignKey('certificatechain.id'))
+    received_certificate_chain_list = db.relationship("CertificateChain",
+                                                      foreign_keys=[received_certificate_chain_list_id])
+
+    validated_against_truststores_list = db.Column(db.String)
+
+    sslv2_working_ciphers_count = db.Column(db.Integer)
+    sslv2_working_weak_ciphers_count = db.Column(db.Integer)
+
+    sslv3_working_ciphers_count = db.Column(db.Integer)
+    sslv3_working_weak_ciphers_count = db.Column(db.Integer)
+
+    tlsv10_working_ciphers_count = db.Column(db.Integer)
+    tlsv10_working_weak_ciphers_count = db.Column(db.Integer)
+
+    tlsv11_working_ciphers_count = db.Column(db.Integer)
+    tlsv11_working_weak_ciphers_count = db.Column(db.Integer)
+
+    tlsv12_working_ciphers_count = db.Column(db.Integer)
+    tlsv12_working_weak_ciphers_count = db.Column(db.Integer)
+
+    tlsv13_working_ciphers_count = db.Column(db.Integer)
+    tlsv13_working_weak_ciphers_count = db.Column(db.Integer)

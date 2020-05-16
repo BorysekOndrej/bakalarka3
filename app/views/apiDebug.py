@@ -200,3 +200,16 @@ def test_notifications_scheduler():
     import app.utils.notifications_general as notifications_general
     notifications_general.schedule_notifications()
     return "done", 200
+
+
+@bp.route('/test_sslyze_simplify/', methods=['GET'])
+@bp.route('/test_sslyze_simplify/<int:scan_result>', methods=['GET'])
+def test_sslyze_simplify(scan_result=1):
+    import app.utils.sslyze_result_simplify as sslyze_result_simplify
+    res = db_models.db.session \
+        .query(db_models.ScanResults) \
+        .get(scan_result)
+    res_simplified = sslyze_result_simplify.sslyze_result_simplify(res)
+    a = db_schemas.ScanResultsSimplifiedSchema().dumps(res_simplified)
+
+    return json.dumps(json.loads(a), indent=3), 200
