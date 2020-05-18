@@ -7,6 +7,8 @@ from flask import Blueprint, current_app
 
 import app.object_models as object_models
 import app.utils.sslyze_scanner as sslyze_scanner
+import app.utils.ct_search as ct_search
+
 from config import FlaskConfig
 
 bp = Blueprint('apiV1', __name__)
@@ -425,3 +427,8 @@ def api_scan_result_history(user_id=None, x_days=30):
         res_arr.append(new_dict)
 
     return json.dumps(res_arr, indent=3), 200
+
+
+@bp.route('/ct_get_subdomains/<string:domain>')
+def api_ct_get_subdomains(domain):
+    return jsonify({"hostname": domain, "result": ct_search.get_subdomains_from_ct(domain)})
