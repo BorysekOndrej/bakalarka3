@@ -36,7 +36,7 @@ def redis_sslyze_scan_domains_to_json(domains_json) -> str:
 
 def redis_sent_results(results_json_string):
     # todo: do it through app context if it's not sending to collector
-    endpoint_url = 'http://localhost:5000/api/v1/sslyze_import_scan_results'
+    endpoint_url = f'{config.FlaskConfig.REMOTE_COLLECTOR_BASE_URL}/api/v1/sslyze_import_scan_results'
     # if config.FlaskConfig.REMOTE_COLLECTOR:
     #     endpoint_base_url = config.FlaskConfig.REMOTE_COLLECTOR_BASE_URL
     r = requests.post(endpoint_url, json={'results_attached': True, 'results': results_json_string})
