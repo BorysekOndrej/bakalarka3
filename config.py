@@ -43,8 +43,8 @@ class FlaskConfig(object):
     REDIS_ENABLED = os.environ.get('REDIS_ENABLED') or False
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
 
-    REMOTE_COLLECTOR = False
-    REMOTE_COLLECTOR_BASE_URL = 'https://bakalarka3.borysek.eu'
+    REMOTE_COLLECTOR = os.environ.get('REMOTE_COLLECTOR') or False
+    REMOTE_COLLECTOR_BASE_URL = os.environ.get('REMOTE_COLLECTOR_BASE_URL') or 'https://bakalarka3.borysek.eu'
 
 
 class DnsConfig(object):
