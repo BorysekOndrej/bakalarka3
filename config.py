@@ -11,12 +11,12 @@ class LogConfig(object):
 
 
 class FlaskConfig(object):
-    DEBUG = True
+    DEBUG = os.environ.get('DEBUG') or True
     # SQLALCHEMY_DATABASE_URI = 'sqlite:////' + os.path.join(basedir, 'test.db') # todo: permission problem
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + '../db/test.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
-    SECRET_KEY = os.environ.get('SECRET_KEY') if os.environ.get('SECRET_KEY') else 'DEV-KEY-ONE'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'DEV-KEY-ONE'
 
     JWT_SECRET_KEY = 'dolor sit amet'  # todo: change this
 
@@ -40,7 +40,7 @@ class FlaskConfig(object):
 
     # JWT_SESSION_COOKIE = True
 
-    REDIS_ENABLED = False
+    REDIS_ENABLED = os.environ.get('REDIS_ENABLED') or False
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
 
     REMOTE_COLLECTOR = False
