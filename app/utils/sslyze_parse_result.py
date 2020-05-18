@@ -116,7 +116,7 @@ def parse_certificate_chain(obj):
     return app.db_models.CertificateChain.from_list(answer)
 
 
-def parse_single_ocsp_response(obj):
+def parse_single_ocsp_response(obj) -> int:
     crt_obj = db_utils.dict_filter_to_class_variables(app.db_models.OCSPResponseSingle, obj)
 
     crt_obj["certID_hashAlgorithm"] = obj["certID"]["hashAlgorithm"]
@@ -127,12 +127,16 @@ def parse_single_ocsp_response(obj):
     crt_obj["thisUpdate"] = datetime.datetime.strptime(obj["thisUpdate"], '%b %d %H:%M:%S %Y %Z')
     crt_obj["nextUpdate"] = datetime.datetime.strptime(obj["nextUpdate"], '%b %d %H:%M:%S %Y %Z')
 
-    # res, existing = db_utils.get_one_or_create(app.db_models.OCSPResponseSingle, **crt_obj)
-    res = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.OCSPResponseSingleSchema, crt_obj)
+    # crt_obj["thisUpdate"] = str(crt_obj["thisUpdate"])
+    # crt_obj["nextUpdate"] = str(crt_obj["nextUpdate"])
+
+    res = db_utils.get_or_create_or_update_by_unique(app.db_models.OCSPResponseSingle, crt_obj)
+    # res = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.OCSPResponseSingleSchema, crt_obj) # this doesn't work, because datetime problems
+
     return res.id
 
 
-def parse_certificate_information_ocsp_response(obj):
+def parse_certificate_information_ocsp_response(obj) -> int:
     if obj is None:
         return None
     obj["responses_list"] = []
@@ -144,12 +148,14 @@ def parse_certificate_information_ocsp_response(obj):
 
     crt_obj = db_utils.dict_filter_to_class_variables(app.db_models.OCSPResponse, obj)
     # res = app.db_models.OCSPResponse.from_kwargs(crt_obj)
-    res = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.OCSPResponseSchema, crt_obj)
+
+    res = db_utils.get_or_create_or_update_by_unique(app.db_models.OCSPResponse, crt_obj)
+    # res = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.OCSPResponseSchema, crt_obj) # this doesn't work, because datetime problems
 
     if still_to_parse_test:
         obj.pop("responses")
 
-    return res
+    return res.id
 
 
 def parse_certificate_information(scan_result, plugin_title):
