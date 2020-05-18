@@ -45,6 +45,7 @@ class FlaskConfig(object):
 
     REMOTE_COLLECTOR = os.environ.get('REMOTE_COLLECTOR') or False
     REMOTE_COLLECTOR_BASE_URL = os.environ.get('REMOTE_COLLECTOR_BASE_URL') or 'https://bakalarka3.borysek.eu'
+    REMOTE_COLLECTOR_KEY = os.environ.get('REMOTE_COLLECTOR_KEY') or False  # key is not required when the data is comming from 127.0.0.1
 
 
 class DnsConfig(object):
