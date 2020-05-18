@@ -222,8 +222,9 @@ def refresh():
     # logger.error(current_user)
     new_token = flask_jwt_extended.create_access_token(identity=current_user, fresh=False)
     ret = {'access_token': new_token}
-    import time
-    time.sleep(10)  # todo: remove after debugging
+    if FlaskConfig.DEBUG:
+        import time
+        time.sleep(10)  # todo: remove after debugging
     return jsonify(ret), 200
 
 
