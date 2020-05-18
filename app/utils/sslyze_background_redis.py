@@ -40,6 +40,8 @@ def redis_sent_results(results_json_string):
         endpoint_base_url = config.FlaskConfig.REMOTE_COLLECTOR_BASE_URL
     # todo: do it through app context if it's not sending to collector
     endpoint_url = f'{endpoint_base_url}/api/v1/sslyze_import_scan_results'
+    if config.FlaskConfig.REMOTE_COLLECTOR_KEY:
+        endpoint_url += f"/{config.FlaskConfig.REMOTE_COLLECTOR_KEY}"
     print(endpoint_url)
     r = requests.post(endpoint_url, json={'results_attached': True, 'results': results_json_string})
     print(r.status_code, r.text)
