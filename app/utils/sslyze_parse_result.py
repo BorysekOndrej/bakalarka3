@@ -311,7 +311,11 @@ def insert_scan_result_into_db(scan_result: dict) -> app.db_models.ScanResults:
 
     if scan_result["results"].get("HTTP Security Headers", None):
         # this expects Ciphers Suites to be parsed
-        obj.http_security_headers_id = parse_http_security_headers(scan_result, "HTTP Security Headers")
+        obj.http_security_headers_id = -1
+        try:
+            obj.http_security_headers_id = parse_http_security_headers(scan_result, "HTTP Security Headers")
+        except Exception as e:
+            logger.exception(e)
 
     if scan_result["results"].get("TLS 1.2 Session Resumption Support", None):
         # this expects Ciphers Suites to be parsed
