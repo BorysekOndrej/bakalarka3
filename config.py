@@ -70,6 +70,7 @@ class SchedulerConfig(object):
 
 class SslyzeConfig(object):
     asynchronous_scanning = False
+    save_results_also_to_tmp_files = True
 
 
 class CacheConfig(object):

@@ -1,9 +1,13 @@
+import os
+from hashlib import sha256
+
 import app
 import app.db_models as db_models
 import app.db_schemas as db_schemas
 
 # from loguru import logger
 import app.object_models as object_models
+from config import SslyzeConfig
 
 logger = app.logger
 
@@ -282,6 +286,18 @@ def insert_scan_result_into_db(scan_result: dict) -> app.db_models.ScanResults:
 
     target_dict = json.loads(scan_result.get("target", "{}"))
     target = object_models.TargetWithExtra.transient_from_dict(target_dict)
+
+    if SslyzeConfig.save_results_also_to_tmp_files:
+        scan_result_string = json.dumps(scan_result, indent=3)
+        hash_res = sha256(scan_result_string.encode("utf8")).hexdigest()
+        name = f'{target.target_definition.hostname}-{hash_res}.json'
+
+        if not os.path.isfile(name):
+            files.create_folder_if_doesnt_exist('tmp/scan_result')
+            files.write_to_file(f'tmp/scan_result/{name}', scan_result_string)
+            del scan_result_string
+            del hash_res
+            del name
 
     general_parser_matching = {
         "Deflate Compression": app.db_models.DeflateCompression,

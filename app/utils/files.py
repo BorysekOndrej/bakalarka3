@@ -1,3 +1,5 @@
+from pathlib import Path
+
 def write_to_file(filename: str, content: str):
     with open(filename, "w") as f:
         f.write(content)
@@ -15,3 +17,6 @@ def unescape_json1(json_string):
         .replace('}"', '}') \
         .replace('\\"', '"')
 
+
+def create_folder_if_doesnt_exist(path: str):
+    Path(path).mkdir(parents=True, exist_ok=True)
