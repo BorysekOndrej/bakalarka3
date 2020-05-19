@@ -1,3 +1,4 @@
+import copy
 import datetime
 import json
 import random
@@ -99,6 +100,7 @@ def api_target_by_id(target_id: int):
     return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
 
 
+@bp.route('/add_targets', methods=['POST', 'PUT'])
 @bp.route('/add_target', methods=['POST', 'PUT'])
 @bp.route('/target', methods=['PUT', 'PATCH'])
 @flask_jwt_extended.jwt_required
@@ -110,19 +112,34 @@ def api_target():
     data["target"]["protocol"] = data.get("protocol", "HTTPS").replace("TlsWrappedProtocolEnum.",
                                                                        "")  # todo: remove this hack
     data["target"].pop("id", None)
-    target = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.TargetSchema, data["target"])
 
-    if data.get("scanOrder", None):
-        scan_order_def = db_utils.merge_dict_with_copy_and_overwrite(data.get("scanOrder", {}),
-                                                                     {"target_id": target.id, "user_id": user_id})
-        db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema, scan_order_def)
+    target_hostnames = data["target"]["hostname"].split(";")
+    target_hostnames = list(map(lambda x: x.strip(), target_hostnames))
+    target_hostnames = list(filter(lambda x: len(x), target_hostnames))
+    target_hostnames = list(set(target_hostnames))
 
-    if data.get("notifications", None):
-        notifications_def = db_utils.merge_dict_with_copy_and_overwrite({"preferences": data.get("notifications", {})},
-                                                                        {"target_id": target.id, "user_id": user_id})
-        db_utils_advanced.generic_get_create_edit_from_data(db_schemas.NotificationSettingsSchema, notifications_def)
+    target_ids = set()
 
-    return api_target_by_id(target.id)
+    for target_hostname in target_hostnames:
+        new_target_def = copy.deepcopy(data["target"])
+        new_target_def["hostname"] = target_hostname
+
+        target = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.TargetSchema, new_target_def)
+
+        if data.get("scanOrder", None):
+            scan_order_def = db_utils.merge_dict_with_copy_and_overwrite(data.get("scanOrder", {}),
+                                                                         {"target_id": target.id, "user_id": user_id})
+            db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema, scan_order_def)
+
+        if data.get("notifications", None):
+            notifications_def = db_utils.merge_dict_with_copy_and_overwrite({"preferences": data.get("notifications", {})},
+                                                                            {"target_id": target.id, "user_id": user_id})
+            db_utils_advanced.generic_get_create_edit_from_data(db_schemas.NotificationSettingsSchema, notifications_def)
+
+        target_ids.add(target.id)
+
+    return f'Inserted {len(target_ids)} targets', 200
+    # return api_target_by_id(target.id)  # todo: reenable this
 
 
 @bp.route('/add_scan_order', methods=['POST'])
