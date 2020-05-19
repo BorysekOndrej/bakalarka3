@@ -236,9 +236,10 @@ def parse_http_security_headers(scan_result, plugin_title):
     current_plugin["verified_certificate_chain_list_id"] = parse_certificate_chain(current_plugin[
                                                                                        "verified_certificate_chain"])
     prep_obj = db_utils.dict_filter_to_class_variables(app.db_models.Certificate, current_plugin)
-    prep_obj["expect_ct_header_max_age"] = current_plugin["expect_ct_header"]["max_age"]
-    prep_obj["expect_ct_header_report_uri"] = current_plugin["expect_ct_header"]["report_uri"]
-    prep_obj["expect_ct_header_enforce"] = current_plugin["expect_ct_header"]["enforce"]
+    if current_plugin["expect_ct_header"]:
+        prep_obj["expect_ct_header_max_age"] = current_plugin["expect_ct_header"]["max_age"]
+        prep_obj["expect_ct_header_report_uri"] = current_plugin["expect_ct_header"]["report_uri"]
+        prep_obj["expect_ct_header_enforce"] = current_plugin["expect_ct_header"]["enforce"]
 
     # res = db_utils.get_one_or_create(app.db_models.HTTPSecurityHeaders, **prep_obj)
     res = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.HTTPSecurityHeadersSchema, prep_obj)
