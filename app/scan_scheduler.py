@@ -25,8 +25,9 @@ def offset_time_back_from_now(n_secs):
     return datetime.datetime.now() - datetime.timedelta(seconds=n_secs)
 
 
-def default_enqueued_offseted_time():
-    return offset_time_back_from_now(SchedulerConfig.enqueue_min_time)
+def default_enqueued_offseted_timestamp():
+    offseted_datetime = offset_time_back_from_now(SchedulerConfig.enqueue_min_time)
+    return db_models.datetime_to_timestamp(offseted_datetime)
 
 
 def update_scan_order_minimal_for_target(target_id: int) -> Optional[int]:
@@ -51,10 +52,10 @@ def update_scan_order_minimal_for_target(target_id: int) -> Optional[int]:
 
 
 def qry_scan_base():
-    date_offseted = default_enqueued_offseted_time()
+    date_offseted = default_enqueued_offseted_timestamp()
     return db.session.query(db_models.ScanOrderMinimal.id) \
         .filter(db_models.LastScan.id == db_models.ScanOrderMinimal.id) \
-        .filter(db_models.LastScan.last_enqueued < date_offseted) \
+        .filter(db_models.LastScan.last_enqueued < date_offseted)
 
 
 def qry_first_scan():
@@ -88,10 +89,6 @@ def get_due_targets(limit_n=SchedulerConfig.batch_increments):
     logger.debug(f"Get due targets (first scan) of {len(res_first_scan)} elements with limit {limit_n}: {res_first_scan}")
     logger.debug(f"Get due targets (rescan) of {len(res_rescan)} elements with limit {remains_empty_in_batch}: {res_rescan}")
 
-    #remains_empty_in_batch_2 = remains_empty_in_batch - len(res_rescan)
-    #if remains_empty_in_batch_2 <= 0:
-    #    logger.warning(f"Get due scan - batch completely filled, possible backlog. Batch: {len(res_first_scan)+len(res_rescan)}/{limit_n}")
-
     return [x[0] for x in (res_first_scan + res_rescan)]
 
 
@@ -118,7 +115,7 @@ def mark_scanned_targets(target_ids, time=None):
 
 
 def backdate_enqueued_targets():
-    query_compare_time = db_models.datetime_to_timestamp(default_enqueued_offseted_time())
+    query_compare_time = db_models.datetime_to_timestamp(default_enqueued_offseted_timestamp())
     res = db.session.query(db_models.LastScan.id) \
         .filter(db_models.ScanOrderMinimal.id == db_models.LastScan.id) \
         .filter(db_models.LastScan.last_enqueued > query_compare_time) \
@@ -126,7 +123,7 @@ def backdate_enqueued_targets():
         .all()
 
     new_ids = [x[0] for x in res]
-    mark_enqueued_targets(new_ids, default_enqueued_offseted_time())
+    mark_enqueued_targets(new_ids, default_enqueued_offseted_timestamp())
     return len(new_ids)
 
 
