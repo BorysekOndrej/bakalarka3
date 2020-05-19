@@ -293,6 +293,21 @@ def api_sslyze_scan_due_targets():
     return actions.sslyze_enqueue_waiting_scans()
 
 
+@bp.route('/sslyze_scan_due_targets/<string:sensor_key>', methods=['GET'])
+def api_sslyze_scan_due_targets_via_sensor_key(sensor_key=None):
+    valid_access = False
+    if FlaskConfig.REMOTE_COLLECTOR_KEY and sensor_key:
+        valid_access = FlaskConfig.REMOTE_COLLECTOR_KEY == sensor_key
+    if request.remote_addr == '127.0.0.1':
+        valid_access = True
+    if not valid_access:
+        logger.warning(
+            f'Request to scan due targets: unauthorized: key: {sensor_key}, IP: {request.remote_addr}')
+        return 'Access only allowed with valid REMOTE_COLLECTOR_KEY or from localhost', 401
+
+    return api_sslyze_scan_due_targets()
+
+
 @bp.route('/sslyze_import_scan_results', methods=['POST'])
 @bp.route('/sslyze_import_scan_results/<string:sensor_key>', methods=['POST'])
 def api_sslyze_import_scan_results(sensor_key=None):
