@@ -71,6 +71,7 @@ class SchedulerConfig(object):
 class SslyzeConfig(object):
     asynchronous_scanning = False
     save_results_also_to_tmp_files = True
+    soft_fail_on_result_parse_fail = True
 
 
 class CacheConfig(object):

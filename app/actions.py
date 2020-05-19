@@ -3,13 +3,13 @@ import json
 from typing import Optional, List, Dict, Tuple
 
 import app.scan_scheduler as scan_scheduler
-from app import db_models, db_schemas
+from app import db_models, db_schemas, logger
 import app.object_models as object_models
 import app.utils.db_utils_advanced as db_utils_advanced
 import app.utils.sslyze_scanner as sslyze_scanner
 import app.utils.sslyze_parse_result as sslyze_parse_result
 
-from config import FlaskConfig
+from config import FlaskConfig, SslyzeConfig
 import app.utils.sslyze_result_simplify as sslyze_result_simplify
 
 
@@ -77,11 +77,16 @@ def sslyze_send_scan_results(scan_dict: dict) -> bool:
         return True
 
     for single_result_str in results:
-        single_result: dict = json.loads(single_result_str)
-        scan_result = sslyze_parse_result.insert_scan_result_into_db(single_result)
-        scan_result_simple = sslyze_result_simplify.sslyze_result_simplify(scan_result)
-        db_models.db.session.add(scan_result_simple)
-
+        try:
+            single_result: dict = json.loads(single_result_str)
+            scan_result = sslyze_parse_result.insert_scan_result_into_db(single_result)
+            scan_result_simple = sslyze_result_simplify.sslyze_result_simplify(scan_result)
+            db_models.db.session.add(scan_result_simple)
+        except Exception as e:
+            logger.warning("Failed inserting or parsing scan result. Skipping it.")
+            logger.exception(e)
+            if not SslyzeConfig.soft_fail_on_result_parse_fail:
+                raise
     return True
 
 
