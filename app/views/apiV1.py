@@ -305,7 +305,7 @@ def api_sslyze_scan_due_targets_via_sensor_key(sensor_key=None):
             f'Request to scan due targets: unauthorized: key: {sensor_key}, IP: {request.remote_addr}')
         return 'Access only allowed with valid REMOTE_COLLECTOR_KEY or from localhost', 401
 
-    return api_sslyze_scan_due_targets()
+    return actions.sslyze_enqueue_waiting_scans()
 
 
 @bp.route('/sslyze_import_scan_results', methods=['POST'])
