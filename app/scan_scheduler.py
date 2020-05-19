@@ -1,4 +1,5 @@
 import datetime
+import itertools
 from typing import Optional, List
 from sqlalchemy import func
 
@@ -97,10 +98,22 @@ def get_due_targets(limit_n=SchedulerConfig.batch_increments):
 def mark_enqueued_targets(target_ids, time=None):
     if not target_ids:
         return
-    time = db_models.datetime_to_timestamp(default_current_time(time))
+    if time is None:
+        time = db_models.datetime_to_timestamp(default_current_time(time))
     db.session.query(db_models.LastScan)\
         .filter(db_models.LastScan.id.in_(tuple(target_ids)))\
         .update({db_models.LastScan.last_enqueued: time}, synchronize_session='fetch')
+    db.session.commit()
+
+
+def mark_scanned_targets(target_ids, time=None):
+    if not target_ids:
+        return
+    if time is None:
+        time = db_models.datetime_to_timestamp(default_current_time(time))
+    db.session.query(db_models.LastScan)\
+        .filter(db_models.LastScan.id.in_(tuple(target_ids)))\
+        .update({db_models.LastScan.last_scanned: time}, synchronize_session='fetch')
     db.session.commit()
 
 
@@ -139,7 +152,7 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size) -> List[object_models.
             .all()
 
         for single_target in new_targets:
-            # single_target: db_models.Target
+            single_target: db_models.Target
             if single_target.ip_address:
                 new_target_with_extra = object_models.TargetWithExtra(single_target, {"comes_from_dns": False})
                 targets_e.add(new_target_with_extra)
@@ -148,9 +161,9 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size) -> List[object_models.
             ips = dns_utils.get_ips_for_domain(single_target.hostname)
 
             if len(ips) == 0:
-
-                # todo: mark as scanned in LastScan
-                # todo: scan result
+                mark_scanned_targets(single_target.id)
+                logger.info(f'No DNS results for {single_target.hostname} (id {single_target.id}).')
+                # todo: produce result with information about empty reason for scan failure
                 continue
 
             for ip in ips:
@@ -164,12 +177,17 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size) -> List[object_models.
 
         if original_size == new_size:
             break  # there are apparently no new targets
-    # todo: make sure that targets_e is deduplicated
 
     unique_targets_repr = set()
     unique_targets = []
-    # todo: if collision appears, take the one that comes from DNS
-    for x in targets_e:
+
+    targets_from_dns = filter(lambda x: x.extra.get("comes_from_dns", False), targets_e)
+    targets_direct_ip = filter(lambda x: not x.extra.get("comes_from_dns", False), targets_e)
+
+    # In case of when bot target that has IP from DNS and target that has static IP, prefer the one from DNS.
+    # If comes_from_dns is present in scan result, then the both direct IP and DNS version get the scan result.
+
+    for x in itertools.chain(targets_from_dns, targets_direct_ip):
         if repr(x.target_definition) not in unique_targets_repr:
             unique_targets_repr.add(repr(x.target_definition))
             unique_targets.append(x)
