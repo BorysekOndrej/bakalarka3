@@ -60,12 +60,12 @@ class ImportConfig(object):
 
 
 class SchedulerConfig(object):
-    enqueue_min_time = 5*60  # seconds
+    enqueue_min_time = 60*60  # seconds
     batch_increments = 10  # How many Defined targets to add in each iteration. Defined target can resolve into many Scan targets when multiple IPs are ressolved by DNS.
     batch_size = 100  # Desired batch size of Scan targets per each scan batch. The actual upper limit will be: batch_size - batch_increments + (batch_increments * max_records_per_resolve)
     max_first_scan_delay = 4 * 60
 
-    default_target_scan_periodicity = 12*60*60 # 12 hours
+    default_target_scan_periodicity = 12*60*60  # 12 hours
 
 
 class SslyzeConfig(object):
