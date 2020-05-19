@@ -178,6 +178,10 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size) -> List[object_models.
         if original_size == new_size:
             break  # there are apparently no new targets
 
+    return deduplicate_scan_orders(targets_e)
+
+
+def deduplicate_scan_orders(targets_e: List[object_models.TargetWithExtra]):
     unique_targets_repr = set()
     unique_targets = []
 
