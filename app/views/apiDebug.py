@@ -213,3 +213,10 @@ def test_sslyze_simplify(scan_result=1):
     a = db_schemas.ScanResultsSimplifiedSchema().dumps(res_simplified)
 
     return json.dumps(json.loads(a), indent=3), 200
+
+
+@bp.route('/test_sslyze_parsing/', methods=['GET'])
+def test_sslyze_parsing():
+    import app.tests.sslyze_parse_test as sslyze_parse_test
+    sslyze_parse_test.try_to_insert_all_scan_results()
+    return "done", 200
