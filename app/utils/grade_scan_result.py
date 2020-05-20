@@ -21,12 +21,25 @@ class Grades(Enum):
     Default_cap = 10  # This is used as max(Grades).
 
 
-def grade_scan_results(x: db_models.ScanResults) -> Tuple[str, List[str]]:
-    grade_cap = Grades.Default_cap
+class GradeResult(object):
+    def __init__(self, scan_result: db_models.ScanResults, partial_simplified: db_models.ScanResultsSimplified):
+        self.grade_cap = Grades.Default_cap
+        self.grade_cap_reasons = []
+        self.scan_result = scan_result
+        self.partial_simplified = partial_simplified
 
-    reasons = []
-    reasons.append("Capped at E because server supports SSLv2.")
-    reasons.append("Capped at C because server supports SSLv3")
+    def _format_msg_and_cap(self, new_cap: Grades, reason: str):
+        msg = f'Capped at {new_cap.name} because {reason}'
+        self.grade_cap_reasons.append(msg)
 
-    grade_str = grade_cap.name
-    return grade_str, reasons
+        res_cap_int = min(self.grade_cap.value, new_cap.value)
+        self.grade_cap = Grades(res_cap_int)
+
+    def _calculate(self):
+        # if partial_simplified.sslv2_working_ciphers_count:
+        # grade_cap, msg = format_msg_and_cap(grade_cap, Grades.)
+        pass
+
+    def get_result(self) -> Tuple[str, List[str]]:
+        self._calculate()
+        return self.grade_cap.name, self.grade_cap_reasons
