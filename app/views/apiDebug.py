@@ -225,8 +225,16 @@ def test_sslyze_parsing():
 @bp.route('/test_grading/<int:scan_result>', methods=['GET'])
 def test_grading(scan_result):
     import app.utils.grade_scan_result as grade_scan_result
+    import app.utils.sslyze_result_simplify as sslyze_result_simplify
+
     res = db_models.db.session \
         .query(db_models.ScanResults) \
         .get(scan_result)
-    grade_scan_result.grade_scan_results(res)
-    return "done", 200
+
+    res_simplified = sslyze_result_simplify.sslyze_result_simplify(res)
+    grade_str, reasons = grade_scan_result.grade_scan_result(res, res_simplified)
+
+    return jsonify({
+        'grade': grade_str,
+        'reasons': reasons
+    }), 200
