@@ -759,9 +759,11 @@ class SentNotificationsLog(Base, UniqueModel):
 
 class ScanResultsSimplified(Base, UniqueModel):
     __tablename__ = 'scanresultssimplified'
-    __uniqueColumns__ = ['id']
+    __uniqueColumns__ = ['scanresult_id']
 
     id = db.Column(db.Integer, primary_key=True)
+
+    scanresult_id = db.Column(db.Integer, index=True)  # This is needed because Marshmallow in my conf throws away id param.
 
     notBefore = db.Column(NumericTimestamp)
     notAfter = db.Column(NumericTimestamp)

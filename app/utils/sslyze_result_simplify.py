@@ -16,7 +16,7 @@ def count_after_split_of_param_if_not_none(x: Optional[object], param_name: str)
 # todo: maybe persist to DB?
 def sslyze_result_simplify(scan_result: db_models.ScanResults) -> db_models.ScanResultsSimplified:
     simple = db_models.ScanResultsSimplified()
-    simple.id = scan_result.id
+    simple.scanresult_id = scan_result.id
 
     if not scan_result.certificate_information:
         logger.info(f"Simplifing scan result ({scan_result.id}) which doesn't have certificate_information")

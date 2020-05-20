@@ -7,6 +7,7 @@ import app.db_schemas as db_schemas
 
 # from loguru import logger
 import app.object_models as object_models
+import app.utils.sslyze_result_simplify as sslyze_result_simplify
 from config import SslyzeConfig
 
 logger = app.logger
@@ -367,6 +368,12 @@ def insert_scan_result_into_db(scan_result: dict) -> app.db_models.ScanResults:
 
     scanresult_id = res.id
     update_references_to_scan_result(target, scanresult_id)
+
+    scan_result_simple = sslyze_result_simplify.sslyze_result_simplify(res)
+    scan_result_simple = db_utils_advanced.generic_get_create_edit_from_transient(
+        db_schemas.ScanResultsSimplifiedSchema,
+        scan_result_simple
+    )
 
     if still_to_parse_test:
         to_remove = []

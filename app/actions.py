@@ -84,8 +84,8 @@ def sslyze_send_scan_results(scan_dict: dict) -> bool:
         try:
             single_result: dict = json.loads(single_result_str)
             scan_result = sslyze_parse_result.insert_scan_result_into_db(single_result)
-            scan_result_simple = sslyze_result_simplify.sslyze_result_simplify(scan_result)
-            db_models.db.session.add(scan_result_simple)
+            # scan_result_simple = sslyze_result_simplify.sslyze_result_simplify(scan_result)
+            # db_models.db.session.add(scan_result_simple)
         except Exception as e:
             logger.warning("Failed inserting or parsing scan result. Skipping it.")
             logger.exception(e)
@@ -117,7 +117,7 @@ def get_scan_history(user_id: int, x_days: int = 30):  # -> Optional[Tuple[db_mo
         .outerjoin(db_models.ScanResultsHistory,
                    db_models.ScanResultsHistory.target_id == db_models.ScanOrder.target_id) \
         .outerjoin(db_models.ScanResultsSimplified,
-                   db_models.ScanResultsHistory.scanresult_id == db_models.ScanResultsSimplified.id) \
+                   db_models.ScanResultsHistory.scanresult_id == db_models.ScanResultsSimplified.scanresult_id) \
         .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
         .filter(db_models.ScanOrder.active == True) \
         .filter(db_models.ScanOrder.user_id == user_id) \
