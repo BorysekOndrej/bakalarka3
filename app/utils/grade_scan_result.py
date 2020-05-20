@@ -21,6 +21,12 @@ class Grades(Enum):
     Default_cap = 10  # This is used as max(Grades).
 
 
+def grade_scan_result(scan_result: db_models.ScanResults, partial_simplified: db_models.ScanResultsSimplified)\
+        -> Tuple[str, List[str]]:
+    tmp = GradeResult(scan_result, partial_simplified)
+    return tmp.get_result()
+
+
 class GradeResult(object):
     def __init__(self, scan_result: db_models.ScanResults, partial_simplified: db_models.ScanResultsSimplified):
         self.grade_cap = Grades.Default_cap
@@ -29,16 +35,31 @@ class GradeResult(object):
         self.partial_simplified = partial_simplified
 
     def _format_msg_and_cap(self, new_cap: Grades, reason: str):
-        msg = f'Capped at {new_cap.name} because {reason}'
+        msg = f'Capped at {new_cap.name} because the server {reason}'
         self.grade_cap_reasons.append(msg)
 
         res_cap_int = min(self.grade_cap.value, new_cap.value)
         self.grade_cap = Grades(res_cap_int)
 
     def _calculate(self):
-        # if partial_simplified.sslv2_working_ciphers_count:
-        # grade_cap, msg = format_msg_and_cap(grade_cap, Grades.)
-        pass
+        if self.partial_simplified.sslv2_working_ciphers_count:
+            self._format_msg_and_cap(Grades.F, "supports SSLv2")
+
+        if self.partial_simplified.sslv3_working_ciphers_count:
+            self._format_msg_and_cap(Grades.D, "supports SSLv3")
+
+        if self.partial_simplified.tlsv10_working_ciphers_count:
+            self._format_msg_and_cap(Grades.B, "supports TLS 1.0")
+
+        if self.partial_simplified.tlsv11_working_ciphers_count:
+            self._format_msg_and_cap(Grades.B, "supports TLS 1.1")
+
+        if self.partial_simplified.tlsv11_working_weak_ciphers_count == 0:
+            self._format_msg_and_cap(Grades.A, "doesn't support TLS 1.3")
+
+        if self.partial_simplified.tlsv13_working_weak_ciphers_count == 0 and \
+                self.partial_simplified.tlsv12_working_weak_ciphers_count == 0:
+            self._format_msg_and_cap(Grades.B, "doesn't support either TLS 1.2 or TLS 1.3")
 
     def get_result(self) -> Tuple[str, List[str]]:
         self._calculate()
