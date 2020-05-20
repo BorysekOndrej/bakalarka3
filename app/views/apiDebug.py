@@ -220,3 +220,13 @@ def test_sslyze_parsing():
     import app.tests.sslyze_parse_test as sslyze_parse_test
     sslyze_parse_test.try_to_insert_all_scan_results()
     return "done", 200
+
+
+@bp.route('/test_grading/<int:scan_result>', methods=['GET'])
+def test_grading(scan_result):
+    import app.utils.grade_scan_result as grade_scan_result
+    res = db_models.db.session \
+        .query(db_models.ScanResults) \
+        .get(scan_result)
+    grade_scan_result.grade_scan_results(res)
+    return "done", 200
