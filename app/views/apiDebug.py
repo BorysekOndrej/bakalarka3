@@ -222,14 +222,14 @@ def test_sslyze_parsing():
     return "done", 200
 
 
-@bp.route('/test_grading/<int:scan_result>', methods=['GET'])
-def test_grading(scan_result):
+@bp.route('/test_grading/<int:scan_result_id>', methods=['GET'])
+def test_grading(scan_result_id):
     import app.utils.grade_scan_result as grade_scan_result
     import app.utils.sslyze_result_simplify as sslyze_result_simplify
 
     res = db_models.db.session \
         .query(db_models.ScanResults) \
-        .get(scan_result)
+        .get(scan_result_id)
 
     res_simplified = sslyze_result_simplify.sslyze_result_simplify(res)
     grade_str, reasons = grade_scan_result.grade_scan_result(res, res_simplified)
@@ -238,3 +238,17 @@ def test_grading(scan_result):
         'grade': grade_str,
         'reasons': reasons
     }), 200
+
+
+@bp.route('/test_sslyze_simplify_insert/<int:scan_result_id>', methods=['GET'])
+def test_sslyze_simplify_insert(scan_result_id):
+    import app.utils.sslyze_result_simplify as sslyze_result_simplify
+
+    res = db_models.db.session \
+        .query(db_models.ScanResults) \
+        .get(scan_result_id)
+
+    res_simplified = sslyze_result_simplify.sslyze_result_simplify(res)
+    res_saved = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ScanResultsSimplifiedSchema, res_simplified)
+    return db_schemas.ScanResultsSimplifiedSchema().dumps(res_saved), 200
+
