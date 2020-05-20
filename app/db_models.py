@@ -766,6 +766,7 @@ class ScanResultsSimplified(Base, UniqueModel):
     notBefore = db.Column(NumericTimestamp)
     notAfter = db.Column(NumericTimestamp)
     grade = db.Column(db.String)
+    grade_reasons = db.Column(db.String)
 
     received_certificate_chain_list_id = db.Column(db.Integer, db.ForeignKey('certificatechain.id'))
     received_certificate_chain_list = db.relationship("CertificateChain",
@@ -790,3 +791,4 @@ class ScanResultsSimplified(Base, UniqueModel):
 
     tlsv13_working_ciphers_count = db.Column(db.Integer)
     tlsv13_working_weak_ciphers_count = db.Column(db.Integer)
+

@@ -53,8 +53,9 @@ def sslyze_result_simplify(scan_result: db_models.ScanResults) -> db_models.Scan
     simple.tlsv12_working_ciphers_count = count_after_split_of_param_if_not_none(scan_result.tlsv12, "accepted_cipher_list")
     simple.tlsv13_working_ciphers_count = count_after_split_of_param_if_not_none(scan_result.tlsv13, "accepted_cipher_list")
 
-    simple.grade, grade_cap_reasons = grade_scan_result.grade_scan_result(scan_result, simple)
-    # simple.grade = "D"
+    grade, grade_cap_reasons = grade_scan_result.grade_scan_result(scan_result, simple)
+    simple.grade = grade
+    simple.grade_reasons = ", ".join(grade_cap_reasons)
 
     # todo: maybe persist to DB?
     return simple
