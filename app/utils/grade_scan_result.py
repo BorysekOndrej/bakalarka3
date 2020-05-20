@@ -18,7 +18,8 @@ class Grades(Enum):
     F = 7
     T = 8  # Not publicly trusted
     M = 9  # Not valid certificate.
-    Default_cap = 10  # This is used as max(Grades).
+    Some_scan_failed = 10
+    Default_cap = 11  # This is used as max(Grades).
 
 
 def grade_scan_result(scan_result: db_models.ScanResults, partial_simplified: db_models.ScanResultsSimplified)\
@@ -33,6 +34,7 @@ class GradeResult(object):
         self.grade_cap_reasons = []
         self.scan_result = scan_result
         self.partial_simplified = partial_simplified
+        self.partial_fail = False
 
     def _format_msg_and_cap(self, new_cap: Grades, reason: str):
         msg = f'Capped at {new_cap.name} because the server {reason}'
@@ -42,6 +44,15 @@ class GradeResult(object):
         self.grade_cap = Grades(res_cap_int)
 
     def _calculate(self):
+        all_ssl_tls_names = ["sslv2", "sslv3", "tlsv1", "tlsv11", "tlsv12", "tlsv13"]
+        for single_ssl_tls_name in all_ssl_tls_names:
+            if getattr(self.scan_result, single_ssl_tls_name) is None:
+                self._format_msg_and_cap(
+                    Grades.Some_scan_failed,
+                    f"Scan of {single_ssl_tls_name} failed. The resulting grade might not be accurate."
+                )
+                self.partial_fail = True
+
         if self.partial_simplified.sslv2_working_ciphers_count:
             self._format_msg_and_cap(Grades.F, "supports SSLv2")
 

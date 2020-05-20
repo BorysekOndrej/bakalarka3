@@ -1,18 +1,22 @@
+from typing import Optional
+
 import app.db_models as db_models
 import app.db_schemas as db_schemas
 import app.utils.db_utils as db_utils
 from loguru import logger
+import app.utils.grade_scan_result as grade_scan_result
 
-def sslyze_grade(scan_result: db_models.ScanResults):
-    # todo: use grading module
-    return "D"
+
+def count_after_split_of_param_if_not_none(x: Optional[object], param_name: str) -> Optional[int]:
+    if x is None:
+        return None  # This is not ideal, but does is probably better than 0
+    return len(db_utils.split_array_to_tuple(getattr(x, param_name)))
 
 
 # todo: maybe persist to DB?
 def sslyze_result_simplify(scan_result: db_models.ScanResults) -> db_models.ScanResultsSimplified:
     simple = db_models.ScanResultsSimplified()
     simple.id = scan_result.id
-    simple.grade = sslyze_grade(scan_result)
 
     if not scan_result.certificate_information:
         logger.info(f"Simplifing scan result ({scan_result.id}) which doesn't have certificate_information")
@@ -42,12 +46,15 @@ def sslyze_result_simplify(scan_result: db_models.ScanResults) -> db_models.Scan
             simple.notAfter = db_models.datetime_to_timestamp(chain_for_dates.not_after())
             simple.notBefore = db_models.datetime_to_timestamp(chain_for_dates.not_before())
 
-        simple.sslv2_working_ciphers_count = len(db_utils.split_array_to_tuple(scan_result.sslv2.accepted_cipher_list))
-        simple.sslv3_working_ciphers_count = len(db_utils.split_array_to_tuple(scan_result.sslv2.accepted_cipher_list))
-        simple.tlsv10_working_ciphers_count = len(db_utils.split_array_to_tuple(scan_result.tlsv1.accepted_cipher_list))
-        simple.tlsv11_working_ciphers_count = len(db_utils.split_array_to_tuple(scan_result.tlsv11.accepted_cipher_list))
-        simple.tlsv12_working_ciphers_count = len(db_utils.split_array_to_tuple(scan_result.tlsv12.accepted_cipher_list))
-        simple.tlsv13_working_ciphers_count = len(db_utils.split_array_to_tuple(scan_result.tlsv13.accepted_cipher_list))
+    simple.sslv2_working_ciphers_count = count_after_split_of_param_if_not_none(scan_result.sslv2, "accepted_cipher_list")
+    simple.sslv3_working_ciphers_count = count_after_split_of_param_if_not_none(scan_result.sslv3, "accepted_cipher_list")
+    simple.tlsv10_working_ciphers_count = count_after_split_of_param_if_not_none(scan_result.tlsv1, "accepted_cipher_list")
+    simple.tlsv11_working_ciphers_count = count_after_split_of_param_if_not_none(scan_result.tlsv11, "accepted_cipher_list")
+    simple.tlsv12_working_ciphers_count = count_after_split_of_param_if_not_none(scan_result.tlsv12, "accepted_cipher_list")
+    simple.tlsv13_working_ciphers_count = count_after_split_of_param_if_not_none(scan_result.tlsv13, "accepted_cipher_list")
+
+    simple.grade, grade_cap_reasons = grade_scan_result.grade_scan_result(scan_result, simple)
+    # simple.grade = "D"
 
     # todo: maybe persist to DB?
     return simple
