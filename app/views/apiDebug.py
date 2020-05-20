@@ -262,3 +262,21 @@ def test_recalculate_simplified(scan_result_id):
     res_saved = sslyze_parse_result.calculate_and_insert_scan_result_simplified_into_db(res)
 
     return db_schemas.ScanResultsSimplifiedSchema().dumps(res_saved), 200
+
+
+@bp.route('/test_recalculate_simplified_all/', methods=['GET'])
+def test_recalculate_simplified_all():
+    res = db_models.db.session \
+        .query(db_models.ScanResults.id) \
+        .all()
+
+    suc = 0
+
+    for x in res:
+        try:
+            test_recalculate_simplified(x)
+            suc += 1
+        except Exception as e:
+            logger.exception(e)
+
+    return jsonify({'successfully': suc, 'all': len(res)}), 200
