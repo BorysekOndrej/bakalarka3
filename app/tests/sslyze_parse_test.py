@@ -1,9 +1,7 @@
-import json
 import os
 from loguru import logger
 
 from app.utils.files import read_from_file
-from app.utils.sslyze_parse_result import insert_scan_result_into_db
 import app.actions as actions
 
 
