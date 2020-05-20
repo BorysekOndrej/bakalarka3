@@ -68,6 +68,10 @@ def parse_cipher_suite(scan_result, plugin_title):
         answer_list = []
         for single_cipher in list_of_results:
             assert single_cipher is not None
+            if len(current_plugin_fields) == 0:
+                # todo: handling of errored_cipher_list
+                logger.warning(f'parse_cipher_suite: probably not implemented parsing for {plugin_field}')
+                continue
             param_order = current_plugin_fields["expected_fields"]
 
             cipher_id = current_plugin_fields["elem_type"].from_dict(single_cipher)
@@ -102,7 +106,6 @@ def parse_server_info(scan_result):
     res = app.db_models.ServerInfo(hostname=server_info_part["hostname"], port=server_info_part["port"],
                                    ip_address=server_info_part["ip_address"],
                                    openssl_cipher_string_supported_id=cipher_res_id)
-    # res, existing = db_utils.get_one_or_create_from_object(res)
     res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ServerInfoSchema, res)
 
     if still_to_parse_test:
@@ -112,6 +115,8 @@ def parse_server_info(scan_result):
 
 
 def parse_certificate_chain(obj):
+    if obj is None:
+        return None
     answer = []
     for i in range(len(obj)):
         cur_crt = parse_certificate(obj[i])
@@ -358,10 +363,9 @@ def insert_scan_result_into_db(scan_result: dict) -> app.db_models.ScanResults:
         # this expects Ciphers Suites to be parsed
         obj.server_info_id = parse_server_info(scan_result)
 
-    obj, existing = db_utils.get_one_or_create_from_object(obj)
-    # db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ScanResultsSchema, obj)  # todo: general
+    res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ScanResultsForeignKeysOnlySchema, obj)  # todo: general
 
-    scanresult_id = obj.id
+    scanresult_id = res.id
     update_references_to_scan_result(target, scanresult_id)
 
     if still_to_parse_test:

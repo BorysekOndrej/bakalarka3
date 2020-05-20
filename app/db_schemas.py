@@ -236,6 +236,13 @@ class CipherSuiteScanResultSchema(SQLAlchemyAutoSchema):
                                    obj.errored_cipher_list)  # todo: check ErroredCipherSuite
 
 
+class ScanResultsForeignKeysOnlySchema(SQLAlchemyAutoSchema):
+    class Meta(BaseSchema.Meta):
+        model = app.db_models.ScanResults
+        include_relationships = False
+        include_fk = True
+
+
 class ScanResultsSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
         model = app.db_models.ScanResults
