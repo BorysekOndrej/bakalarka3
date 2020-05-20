@@ -4,11 +4,12 @@ import app.utils.db_utils as db_utils
 
 
 def sslyze_grade(scan_result: db_models.ScanResults):
-    # todo: grade
+    # todo: use grading module
     return "D"
 
 
-def sslyze_result_simplify(scan_result: db_models.ScanResults):
+# todo: maybe persist to DB?
+def sslyze_result_simplify(scan_result: db_models.ScanResults) -> db_models.ScanResultsSimplified:
     simple = db_models.ScanResultsSimplified()
     simple.id = scan_result.id
     simple.grade = sslyze_grade(scan_result)
@@ -44,4 +45,5 @@ def sslyze_result_simplify(scan_result: db_models.ScanResults):
     simple.tlsv12_working_ciphers_count = len(db_utils.split_array_to_tuple(scan_result.tlsv12.accepted_cipher_list))
     simple.tlsv13_working_ciphers_count = len(db_utils.split_array_to_tuple(scan_result.tlsv13.accepted_cipher_list))
 
+    # todo: maybe persist to DB?
     return simple
