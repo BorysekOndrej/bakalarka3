@@ -287,6 +287,14 @@ def run():
     insert_scan_result_into_db(scan_result)
 
 
+def calculate_and_insert_scan_result_simplified_into_db(scan_result: db_models.ScanResults):
+    scan_result_simple = sslyze_result_simplify.sslyze_result_simplify(scan_result)
+    return db_utils_advanced.generic_get_create_edit_from_transient(
+        db_schemas.ScanResultsSimplifiedSchema,
+        scan_result_simple
+    )
+
+
 def insert_scan_result_into_db(scan_result: dict) -> app.db_models.ScanResults:
     obj = app.db_models.ScanResults()
 
@@ -369,11 +377,7 @@ def insert_scan_result_into_db(scan_result: dict) -> app.db_models.ScanResults:
     scanresult_id = res.id
     update_references_to_scan_result(target, scanresult_id)
 
-    scan_result_simple = sslyze_result_simplify.sslyze_result_simplify(res)
-    scan_result_simple = db_utils_advanced.generic_get_create_edit_from_transient(
-        db_schemas.ScanResultsSimplifiedSchema,
-        scan_result_simple
-    )
+    calculate_and_insert_scan_result_simplified_into_db(res)
 
     if still_to_parse_test:
         to_remove = []

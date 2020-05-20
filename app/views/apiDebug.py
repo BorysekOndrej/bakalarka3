@@ -252,3 +252,13 @@ def test_sslyze_simplify_insert(scan_result_id):
     res_saved = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ScanResultsSimplifiedSchema, res_simplified)
     return db_schemas.ScanResultsSimplifiedSchema().dumps(res_saved), 200
 
+
+@bp.route('/test_recalculate_simplified/<int:scan_result_id>', methods=['GET'])
+def test_recalculate_simplified(scan_result_id):
+    res = db_models.db.session \
+        .query(db_models.ScanResults) \
+        .get(scan_result_id)
+
+    res_saved = sslyze_parse_result.calculate_and_insert_scan_result_simplified_into_db(res)
+
+    return db_schemas.ScanResultsSimplifiedSchema().dumps(res_saved), 200
