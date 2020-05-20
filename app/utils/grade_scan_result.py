@@ -19,7 +19,6 @@ class Grades(Enum):
     T = 8  # Not publicly trusted
     M = 9  # Not valid certificate.
     Some_scan_failed = 10
-    Default_cap = 11  # This is used as max(Grades).
 
 
 def grade_scan_result(scan_result: db_models.ScanResults, partial_simplified: db_models.ScanResultsSimplified)\
@@ -30,7 +29,7 @@ def grade_scan_result(scan_result: db_models.ScanResults, partial_simplified: db
 
 class GradeResult(object):
     def __init__(self, scan_result: db_models.ScanResults, partial_simplified: db_models.ScanResultsSimplified):
-        self.grade_cap = Grades.Default_cap
+        self.grade_cap = Grades.A_plus
         self.grade_cap_reasons = []
         self.scan_result = scan_result
         self.partial_simplified = partial_simplified
@@ -40,7 +39,7 @@ class GradeResult(object):
         msg = f'Capped at {new_cap.name} because the server {reason}'
         self.grade_cap_reasons.append(msg)
 
-        res_cap_int = min(self.grade_cap.value, new_cap.value)
+        res_cap_int = max(self.grade_cap.value, new_cap.value)
         self.grade_cap = Grades(res_cap_int)
 
     def _calculate(self):
