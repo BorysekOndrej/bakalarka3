@@ -65,6 +65,10 @@ def sslyze_enqueue_waiting_scans():
         pass
     else:
         twe = scan_scheduler.get_batch_to_scan()
+        if len(twe) == 0:
+            return {'results_attached': False,
+                    'empty_job': True}
+
     return sslyze_scan(twe)
 
 
