@@ -89,14 +89,21 @@ def scan(targets: List[object_models.TargetWithExtra]) -> List[ScanResult]:
                 scanner.queue_scan_command(server_info, scan_command())
 
             for scan_result in scanner.get_results():
+                # todo: put some error msg to db
+                # todo: handle errors, maybe already solved by PluginRaisedExceptionScanResult
                 scan_results.add(scan_result)
 
         else:
             # synchronous
             scanner = SynchronousScanner(network_timeout=scanner_plugin_network_timeout)
             for scan_command in commands:
-                scan_result = scanner.run_scan_command(server_info, scan_command())
-                scan_results.add(scan_result)
+                try:
+                    scan_result = scanner.run_scan_command(server_info, scan_command())
+                    scan_results.add(scan_result)
+                except Exception as e:
+                    # todo: put some error msg to db
+                    # todo: handle errors, maybe already solved by PluginRaisedExceptionScanResult
+                    logger.exception(e)
 
         for scan_result in scan_results:
             scan_command_title = scan_result.scan_command.get_title()
