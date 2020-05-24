@@ -761,7 +761,7 @@ class ScanResultsSimplified(Base, UniqueModel):
     __tablename__ = 'scanresultssimplified'
     __uniqueColumns__ = ['scanresult_id']
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)  # This id might not be the same as scanresult_id. # todo: fix
 
     scanresult_id = db.Column(db.Integer, index=True)  # This is needed because Marshmallow in my conf throws away id param.
 
