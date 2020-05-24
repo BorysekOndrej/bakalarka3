@@ -9,6 +9,7 @@ from flask import Blueprint, current_app
 import app.object_models as object_models
 import app.utils.sslyze_scanner as sslyze_scanner
 import app.utils.ct_search as ct_search
+import app.utils.sslyze_result_simplify as sslyze_result_simplify
 
 from config import FlaskConfig
 
@@ -254,8 +255,11 @@ def api_get_user_targets():
     # logger.debug(jwt)
 
     res = db_models.db.session \
-        .query(db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults) \
-        .outerjoin(db_models.ScanResults, db_models.LastScan.result_id == db_models.ScanResults.id)\
+        .query(db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults,
+               db_models.ScanResultsSimplified) \
+        .outerjoin(db_models.ScanResults, db_models.LastScan.result_id == db_models.ScanResults.id) \
+        .outerjoin(db_models.ScanResultsSimplified,
+                   db_models.ScanResultsSimplified.scanresult_id == db_models.ScanResults.id) \
         .filter(db_models.LastScan.target_id == db_models.Target.id) \
         .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
         .filter(db_models.ScanOrder.user_id == jwt["id"]) \
@@ -276,15 +280,17 @@ def api_get_user_targets():
                 if single_res.ScanResults is None:
                     continue
 
-                cert_info = single_res.ScanResults.certificate_information
+                if single_res.ScanResultsSimplified:
+                    scan_result_simplified = single_res.ScanResultsSimplified
+                else:
+                    scan_result_simplified = sslyze_result_simplify.sslyze_result_simplify(single_res.ScanResults)
+                    # todo: consider saving the simplified result
 
-                certificates_in_received_chain: List[db_models.Certificate] = db_models.Certificate.select_from_list(
-                    cert_info.received_certificate_chain_list.chain)
-                obj["expires"] = min([x.notAfter for x in certificates_in_received_chain])
-
-                certificates_in_verified_chain: List[db_models.Certificate] = db_models.Certificate.select_from_list(
-                    cert_info.verified_certificate_chain_list.chain)
-                obj["grade"] = "A" if len(certificates_in_verified_chain) else "F"
+                if scan_result_simplified:
+                    obj["expires"] = str(datetime.datetime.fromtimestamp(single_res.ScanResultsSimplified.notAfter))
+                    obj["grade"] = single_res.ScanResultsSimplified.grade
+                    obj["grade_reasons"] = single_res.ScanResultsSimplified.grade_reasons
+                    continue
 
     # for x in json_dict:
     #     x["grade"] = random.choice([chr(ord('A')+i) for i in range(5)])
