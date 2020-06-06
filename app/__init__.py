@@ -40,7 +40,7 @@ def create_app():
     # https://github.com/miguelgrinberg/Flask-Migrate/issues/61#issuecomment-208131722
     with app_new.app_context():
         if db.engine.url.drivername == 'sqlite':
-            migrate.init_app(app_new, db, render_as_batch=True)
+            migrate.init_app(app_new, db, render_as_batch=True, compare_type=True)
         else:
             migrate.init_app(app_new, db)
 
