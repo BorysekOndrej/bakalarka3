@@ -1,7 +1,7 @@
 from loguru import logger
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-# from flask_migrate import Migrate
+from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
@@ -16,8 +16,8 @@ if config.FlaskConfig.REDIS_ENABLED:
 
 db = SQLAlchemy()
 ma = Marshmallow()
+migrate = Migrate()
 
-# migrate = Migrate(app, db)
 jwt = JWTManager()
 cors = CORS(resources={r"/api/*": {"origins": ["http://bakalarka3.borysek:8080",
                                                "http://bakalarka3.borysek:5000"]}},
@@ -36,6 +36,14 @@ def create_app():
         app_new.sslyze_task_queue = rq.Queue('sslyze-tasks', connection=app_new.redis)
 
     db.init_app(app_new)
+
+    # https://github.com/miguelgrinberg/Flask-Migrate/issues/61#issuecomment-208131722
+    with app_new.app_context():
+        if db.engine.url.drivername == 'sqlite':
+            migrate.init_app(app_new, db, render_as_batch=True)
+        else:
+            migrate.init_app(app_new, db)
+
     ma.init_app(app_new)
     jwt.init_app(app_new)
     cors.init_app(app_new)
