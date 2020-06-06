@@ -24,6 +24,8 @@ def sslyze_result_simplify(scan_result: db_models.ScanResults) -> db_models.Scan
         simple.received_certificate_chain_list_id = scan_result.certificate_information.received_certificate_chain_list_id
 
         trust_stores = set()
+        certificate_chains_that_were_verified_ids = set()
+
         verified_chain_list = scan_result.certificate_information.verified_certificate_chain_list
         received_chain_list = scan_result.certificate_information.received_certificate_chain_list
 
@@ -37,8 +39,10 @@ def sslyze_result_simplify(scan_result: db_models.ScanResults) -> db_models.Scan
             for sr in res_new:
                 sr: db_models.ValidatedPath
                 trust_stores.add(sr.trust_store.name)
+                certificate_chains_that_were_verified_ids.add(str(sr.chain.id))
 
         simple.validated_against_truststores_list = ", ".join(list(trust_stores))
+        simple.verified_certificate_chains_lists_ids = ", ".join(list(certificate_chains_that_were_verified_ids))
 
         chain_for_dates = verified_chain_list if verified_chain_list else received_chain_list
 

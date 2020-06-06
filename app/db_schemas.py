@@ -307,3 +307,10 @@ class ScanResultsSimplifiedSchema(SQLAlchemyAutoSchema):
         exclude = ()
 
     received_certificate_chain_list = Nested(CertificateChainSchema)
+
+    verified_certificate_chains_list = fields.Method("get_verified_chains")
+
+    @staticmethod
+    def get_verified_chains(obj):
+        return get_array_reschemed(app.db_models.CertificateChain, CertificateChainSchema,
+                                   obj.verified_certificate_chains_lists_ids)

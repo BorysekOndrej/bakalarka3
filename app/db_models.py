@@ -774,6 +774,8 @@ class ScanResultsSimplified(Base, UniqueModel):
     received_certificate_chain_list = db.relationship("CertificateChain",
                                                       foreign_keys=[received_certificate_chain_list_id])
 
+    verified_certificate_chains_lists_ids = db.Column(db.String)
+
     validated_against_truststores_list = db.Column(db.String)
 
     sslv2_working_ciphers_count = db.Column(db.Integer)
