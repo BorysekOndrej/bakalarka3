@@ -147,7 +147,7 @@ class CertificateChainSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
         model = app.db_models.CertificateChain
 
-    verified_certificate_chain = fields.Method("get_chain")
+    certificate_chain = fields.Method("get_chain")
 
     @staticmethod
     def get_chain(obj):
