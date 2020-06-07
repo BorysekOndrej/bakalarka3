@@ -145,6 +145,7 @@ def api_target():
 
 
 @bp.route('/add_scan_order', methods=['POST'])
+@flask_jwt_extended.jwt_required
 def api_add_scan_order():
     data = json.loads(request.data)
     schema = db_schemas.ScanOrderSchema(session=db_models.db)
@@ -156,6 +157,27 @@ def api_add_scan_order():
     db_models.db.session.commit()
     db_utils.actions_on_modification(result)
     return repr(result)
+
+
+@bp.route('/enable_target_scan/<int:target_id>', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def api_enable_target_scan(target_id: int):
+    user_jwt = flask_jwt_extended.get_jwt_identity()
+    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+
+    target = actions.get_target_from_id_if_user_can_see(target_id, user_id)
+    if target is None:
+        return "Target either doesn't exist or you're allowed to see it.", 400
+
+    scan_order: db_models.ScanOrder = db_utils_advanced.generic_get_create_edit_from_data(
+        db_schemas.ScanOrderSchema,
+        {"target_id": target.id, "user_id": user_id},
+        get_only=True
+    )
+    scan_order.active = True
+    db_models.db.session.commit()
+    db_utils.actions_on_modification(scan_order)
+    return "ok", 200
 
 
 @bp.route('/login', methods=['POST'])
