@@ -5,6 +5,7 @@ import random
 from typing import List, Tuple
 
 from flask import Blueprint, current_app
+from sqlalchemy.orm.exc import NoResultFound
 
 import app.object_models as object_models
 import app.utils.sslyze_scanner as sslyze_scanner
@@ -329,6 +330,24 @@ def api_sslyze_scan_due_targets_via_sensor_key(sensor_key=None):
         return 'Access only allowed with valid REMOTE_COLLECTOR_KEY or from localhost', 401
 
     return actions.sslyze_enqueue_waiting_scans()
+
+
+@bp.route('/sslyze_enqueue_now/<int:target_id>', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def api_sslyze_enqueue_now(target_id):
+    try:
+        res = db_models.db.session \
+            .query(db_models.LastScan) \
+            .filter(db_models.LastScan.target_id == target_id) \
+            .one()
+    except NoResultFound as e:
+        return "Target id not found", 400  # todo: check status code
+
+    res: db_models.LastScan
+    res.last_scanned = None
+    # todo: consider also resetting last_enqueued
+    db_models.db.session.commit()
+    return "ok", 200
 
 
 @bp.route('/sslyze_import_scan_results', methods=['POST'])
