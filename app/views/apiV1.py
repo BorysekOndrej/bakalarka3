@@ -215,7 +215,7 @@ def api_login():
         return jsonify({"msg": "Bad username or password"}), 401  # todo: make sure 401 msgs are same
 
     identity = {"id": res.id, "username": res.username}
-    access_token = flask_jwt_extended.create_access_token(identity=identity, fresh=True)
+    access_token = flask_jwt_extended.create_access_token(identity=identity, fresh=True) # todo: check expires
     refresh_token = flask_jwt_extended.create_refresh_token(identity=identity)
     response_object = jsonify(access_token=access_token)
     response_object: flask.Response
@@ -263,12 +263,26 @@ def refresh():
     # logger.error(request.cookies)
     current_user = flask_jwt_extended.get_jwt_identity()
     # logger.error(current_user)
-    new_token = flask_jwt_extended.create_access_token(identity=current_user, fresh=False)
+    new_token = flask_jwt_extended.create_access_token(identity=current_user, fresh=False)  # todo: check expires
     ret = {'access_token': new_token}
     if FlaskConfig.DEBUG:
         import time
         time.sleep(10)  # todo: remove after debugging
     return jsonify(ret), 200
+
+
+@bp.route('/logout', methods=['GET'])
+@flask_jwt_extended.jwt_refresh_token_required
+def logout():
+    access_token = "logged out"
+    response_object = jsonify(access_token=access_token)
+    response_object: flask.Response
+
+    # todo: consider adding refresh cookie to blacklist
+
+    flask_jwt_extended.unset_jwt_cookies(response_object)
+
+    return response_object, 200
 
 
 @bp.route('/get_user_targets')
