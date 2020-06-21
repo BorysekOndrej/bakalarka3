@@ -799,7 +799,7 @@ class ScanResultsSimplified(Base, UniqueModel):
 
 class SlackConnections(Base, UniqueModel):
     __tablename__ = 'slackconnections'
-    __uniqueColumns__ = ['user_id', 'channel_id']
+    __uniqueColumns__ = ['user_id', 'channel_id', 'team_id']
     __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
 
     id = db.Column(db.Integer, primary_key=True)
