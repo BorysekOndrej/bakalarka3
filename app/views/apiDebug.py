@@ -358,3 +358,41 @@ def slack_oauth_callback():
 
     import app.utils.notifications_slack as notifications_slack
     return notifications_slack.validate_code_and_save(auth_code, res.user_id)
+
+
+@bp.route('/slack_connections/<string:channel_id>', methods=['DELETE'])
+@flask_jwt_extended.jwt_required
+def api_slack_connection_delete(channel_id: str = None):
+    user_jwt = flask_jwt_extended.get_jwt_identity()
+    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+
+    slack_connection: db_models.SlackConnections = db_utils_advanced.generic_get_create_edit_from_data(
+        db_schemas.SlackConnectionsSchema,
+        {"channel_id": channel_id, "user_id": user_id},
+        get_only=True
+    )
+
+    if slack_connection:
+        db_models.db.session.delete(slack_connection)
+        db_models.db.session.commit()
+        return "1 deleted", 200
+    return "0 deleted", 200
+
+
+@bp.route('/slack_connections', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def api_slack_connections_get():
+    user_jwt = flask_jwt_extended.get_jwt_identity()
+    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+
+    slack_connections = db_models.db.session\
+        .query(db_models.SlackConnections)\
+        .filter(db_models.SlackConnections.user_id == user_id)\
+        .all()
+
+    result_arr = []
+    if slack_connections:
+        for x in slack_connections:
+            result_arr.append(x.as_dict())
+
+    return jsonify(result_arr)

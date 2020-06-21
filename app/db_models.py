@@ -815,6 +815,11 @@ class SlackConnections(Base, UniqueModel):
     def __str__(self):
         return f"{self.user_id}, {self.channel_name}"
 
+    def as_dict(self):
+        return {'channel_id': self.channel_id,
+                'channel_name': self.channel_name,
+                }
+
 
 class TmpRandomCodes(Base, UniqueModel):
     __tablename__ = 'tmprandomcodes'
