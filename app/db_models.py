@@ -796,3 +796,21 @@ class ScanResultsSimplified(Base, UniqueModel):
     tlsv13_working_ciphers_count = db.Column(db.Integer)
     tlsv13_working_weak_ciphers_count = db.Column(db.Integer)
 
+
+class SlackConnections(Base, UniqueModel):
+    __tablename__ = 'slackconnections'
+    __uniqueColumns__ = ['user_id', 'channel_id']
+    __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship("User")
+
+    channel_id = db.Column(db.String)
+    channel_name = db.Column(db.String)
+    access_token = db.Column(db.String)
+    webhook_url = db.Column(db.String)
+
+    def __str__(self):
+        return f"{self.user_id}, {self.channel_name}"

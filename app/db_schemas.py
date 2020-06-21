@@ -314,3 +314,12 @@ class ScanResultsSimplifiedSchema(SQLAlchemyAutoSchema):
     def get_verified_chains(obj):
         return get_array_reschemed(app.db_models.CertificateChain, CertificateChainSchema,
                                    obj.verified_certificate_chains_lists_ids)
+
+
+class SlackConnectionsSchema(SQLAlchemyAutoSchema):
+    class Meta(BaseSchema.Meta):
+        model = app.db_models.SlackConnections
+        include_relationships = False
+        include_fk = True  # this needs to be enabled for schema.load to work properly
+
+    user = Nested(UserSchema)

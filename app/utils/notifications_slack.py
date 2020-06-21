@@ -1,7 +1,12 @@
 from slack import WebClient
 from slack.errors import SlackApiError
 
+import app.db_models as db_models
+import app.db_schemas as db_schemas
+import app.utils.db_utils_advanced as db_utils_advanced
+
 from config import SlackConfig
+from loguru import logger
 
 
 def send_message(msg, api_token=None, channel='#notificationstest'):
@@ -37,4 +42,22 @@ def finish_auth():
         code=auth_code,
         redirect_uri=SlackConfig.local_post_install_url
     )
+    if response.data["ok"]:
+        save_slack_config(response.data)  # todo: add user_id
+
     return response.data, response.status_code
+
+
+def save_slack_config(response_data=None, user_id=-1):
+    new_slack_connection = db_models.SlackConnections()
+    new_slack_connection.user_id = user_id
+    new_slack_connection.channel_name = response_data["incoming_webhook"]["channel"]
+    new_slack_connection.channel_id = response_data["incoming_webhook"]["channel_id"]
+    new_slack_connection.access_token = response_data["access_token"]
+    new_slack_connection.webhook_url = response_data["incoming_webhook"]["url"]
+
+    res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.SlackConnectionsSchema,
+                                                                   new_slack_connection)
+    logger.debug(str(res))
+
+    return "ok", 200

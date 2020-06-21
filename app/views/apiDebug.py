@@ -293,13 +293,23 @@ def test_slack():
 
 
 @bp.route("/slack/begin_auth", methods=["GET"])
-def pre_install():
+def slack_pre_install():
     # This function is adopted from Slack documentation.
 
     return f'<a href="{SlackConfig.slack_endpoint_url}">Add to Slack</a>'
 
 
 @bp.route("/slack/finish_auth", methods=["GET", "POST"])
-def post_install():
+def slack_post_install():
+    from flask import request
+    auth_code = request.args['code']
+
+
     import app.utils.notifications_slack as notifications_slack
     return notifications_slack.finish_auth()
+
+
+@bp.route("/slack/test_auth_to_db", methods=["GET"])
+def slack_test():
+    import app.utils.notifications_slack as notifications_slack
+    return notifications_slack.save_slack_config()
