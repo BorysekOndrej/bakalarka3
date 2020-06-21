@@ -2,7 +2,10 @@ import datetime
 import json
 import random
 
-from flask import Blueprint
+from flask import Blueprint, redirect, request
+from flask_jwt_extended import create_access_token, jwt_refresh_token_required, verify_jwt_refresh_token_in_request
+
+import app.utils.randomCodes as randomCodes
 from config import FlaskConfig, SlackConfig
 
 bp = Blueprint('apiDebug', __name__)
@@ -292,24 +295,54 @@ def test_slack():
     return f'{ok}', status_code
 
 
-@bp.route("/slack/begin_auth", methods=["GET"])
+@bp.route("/slack/show_button", methods=["GET"])
 def slack_pre_install():
     # This function is adopted from Slack documentation.
 
     return f'<a href="{SlackConfig.slack_endpoint_url}">Add to Slack</a>'
 
 
-@bp.route("/slack/finish_auth", methods=["GET", "POST"])
-def slack_post_install():
-    from flask import request
-    auth_code = request.args['code']
-
-
-    import app.utils.notifications_slack as notifications_slack
-    return notifications_slack.finish_auth()
+# @flask_jwt_extended.jwt_required # todo
+@bp.route("/slack/begin_auth", methods=["GET"])
+def slack_redirect_to_oauth():
+    db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.SLACK, user_id=42, expire_in_n_minutes=10)
+    url = f'{SlackConfig.slack_endpoint_url}&state={db_code}'
+    return redirect(url, code=302)
 
 
 @bp.route("/slack/test_auth_to_db", methods=["GET"])
 def slack_test():
     import app.utils.notifications_slack as notifications_slack
     return notifications_slack.save_slack_config()
+
+
+@bp.route("/slack/auth_callback", methods=["GET", "POST"])
+@authentication_utils.jwt_refresh_token_if_check_enabled()
+def slack_oauth_callback():
+    # security: It's not possible to get here Access token. (This requests comes from users browser after redirect from
+    #  Slack. Refresh token should be in cookies, but that might make problems with API calls. It's dificult to say what
+    #  should be the correct behaviour. For now I'll lock it down so that the following scenario is not possible.
+    #  Scenario:
+    #       - Attacker generates URL using endpoint slack_redirect_to_oauth. He sends it to victim.
+    #       - Victim fills out the Slack authorization form and submits it.
+    #       - Attacker gets the access because he is the one who initiated the request.
+    #  Now replace the work Attacker with Employee and it sounds like legit scenario.
+    #  Current behaviour: The slack_redirect_to_oauth and slack_oauth_callback need to be initiated by the same user.
+    #                     The slack_oauth_callback expects refresh token in cookie, can be disabled in config.
+
+    current_user_id = None
+    if SlackConfig.check_refresh_cookie_on_callback_endpoint:
+        current_user = flask_jwt_extended.get_jwt_identity()
+        current_user_id = current_user['id']
+
+    auth_code = request.args['code']
+    db_code = request.args['state']
+
+    db_code_valid, res_or_error_msg = randomCodes.validate_code(db_code, randomCodes.ActivityType.SLACK, current_user_id)
+
+    if not db_code_valid:
+        return res_or_error_msg, 400
+    res: db_models.TmpRandomCodes = res_or_error_msg
+
+    import app.utils.notifications_slack as notifications_slack
+    return notifications_slack.validate_code_and_save(auth_code, res.user_id)

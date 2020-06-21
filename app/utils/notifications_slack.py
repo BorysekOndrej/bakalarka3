@@ -25,12 +25,9 @@ def send_message(msg, api_token=None, channel='#notificationstest'):
     return True
 
 
-def finish_auth():
+def validate_code_and_save(auth_code, user_id):
     # This function is adopted from Slack documentation.
     from flask import request
-
-    # Retrieve the auth code from the request params
-    auth_code = request.args['code']
 
     # An empty string is a valid token for this request
     client = WebClient(token="")
@@ -43,12 +40,12 @@ def finish_auth():
         redirect_uri=SlackConfig.local_post_install_url
     )
     if response.data["ok"]:
-        save_slack_config(response.data)  # todo: add user_id
+        save_slack_config(response.data, user_id)
 
     return response.data, response.status_code
 
 
-def save_slack_config(response_data=None, user_id=-1):
+def save_slack_config(response_data, user_id):
     new_slack_connection = db_models.SlackConnections()
     new_slack_connection.user_id = user_id
     new_slack_connection.channel_name = response_data["incoming_webhook"]["channel"]

@@ -27,19 +27,32 @@ def create_and_save_random_code(activity: ActivityType, user_id: int, expire_in_
     return res.code
 
 
-def validate_code(db_code: str, activity: ActivityType):
-    res: db_models.TmpRandomCodes = db_models.db.session \
+def validate_code(db_code: str, activity: ActivityType, user_id=None):
+    query = db_models.db.session \
         .query(db_models.TmpRandomCodes) \
         .filter(db_models.TmpRandomCodes.code == db_code) \
         .filter(db_models.TmpRandomCodes.activity == activity.name) \
         .filter(db_models.TmpRandomCodes.expires >= db_models.datetime_to_timestamp(datetime.datetime.now())) \
-        .first()
+
+    if user_id:
+        query = query.\
+            filter(db_models.TmpRandomCodes.user_id == user_id)
+
+    res: db_models.TmpRandomCodes = query.first()
 
     db_models.logger.warning(res)
 
     if res is None:
-        return False,\
-               "Code either doesn't exist, has expired or is being used for different purpose than it was issued."
+        msg = """Code either:
+               - doesn't exist
+               - has expired
+               - is being used for different purpose than it was originally issued
+               """
+        if user_id:
+            msg += "- belongs to different user than is currently signed in\n"
+
+        return False, msg
+
 
     return True, res
 
