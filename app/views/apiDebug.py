@@ -302,11 +302,23 @@ def slack_pre_install():
     return f'<a href="{SlackConfig.slack_endpoint_url}">Add to Slack</a>'
 
 
-# @flask_jwt_extended.jwt_required # todo
 @bp.route("/slack/begin_auth", methods=["GET"])
-def slack_redirect_to_oauth():
-    db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.SLACK, user_id=42, expire_in_n_minutes=10)
+@flask_jwt_extended.jwt_required
+def slack_url_to_oauth():
+    current_user = flask_jwt_extended.get_jwt_identity()
+    current_user_id = current_user['id']
+
+    db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.SLACK,
+                                                      user_id=current_user_id,
+                                                      expire_in_n_minutes=10)
     url = f'{SlackConfig.slack_endpoint_url}&state={db_code}'
+    return url, 200
+
+
+@bp.route("/slack/begin_auth_redirect", methods=["GET"])
+@flask_jwt_extended.jwt_required
+def slack_redirect_to_oauth():
+    url, _ = slack_url_to_oauth()
     return redirect(url, code=302)
 
 
