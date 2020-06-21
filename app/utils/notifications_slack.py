@@ -27,7 +27,6 @@ def send_message(msg, api_token=None, channel='#notificationstest'):
 
 def validate_code_and_save(auth_code, user_id):
     # This function is adopted from Slack documentation.
-    from flask import request
 
     # An empty string is a valid token for this request
     client = WebClient(token="")
@@ -41,7 +40,8 @@ def validate_code_and_save(auth_code, user_id):
     )
     if response.data["ok"]:
         save_slack_config(response.data, user_id)
-
+    else:
+        logger.warning(response.data)
     return response.data, response.status_code
 
 

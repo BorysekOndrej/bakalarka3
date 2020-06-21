@@ -92,7 +92,7 @@ class SlackConfig(object):
     local_post_install_url = "http://bakalarka3.borysek:5000/api/debug/slack/auth_callback"
     slack_endpoint_url = f"https://slack.com/oauth/v2/authorize?scope={ oauth_scope }&client_id={ client_id }&redirect_uri={ local_post_install_url }"
 
-    check_refresh_cookie_on_callback_endpoint = True  # might cause problems with APIs
+    check_refresh_cookie_on_callback_endpoint = False  # might cause problems with APIs
 
 
 class MailConfig(object):
