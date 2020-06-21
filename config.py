@@ -89,6 +89,9 @@ class SlackConfig(object):
     client_secret = os.environ["SLACK_CLIENT_SECRET"]
     oauth_scope = os.environ["SLACK_BOT_SCOPE"]
 
+    local_post_install_url = "http://bakalarka3.borysek:5000/api/debug/slack/finish_auth"
+    slack_endpoint_url = f"https://slack.com/oauth/v2/authorize?scope={ oauth_scope }&client_id={ client_id }&redirect_uri={ local_post_install_url }"
+
 
 class MailConfig(object):
     enabled = False

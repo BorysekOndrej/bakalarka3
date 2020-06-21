@@ -294,14 +294,14 @@ def test_slack():
 
 @bp.route("/slack/begin_auth", methods=["GET"])
 def pre_install():
-    local_post_install_url = "http://bakalarka3.borysek:5000/api/debug/slack/finish_auth"
-    slack_endpoint_url = f"https://slack.com/oauth/v2/authorize?scope={ SlackConfig.oauth_scope }&client_id={ SlackConfig.client_id }&redirect_uri={local_post_install_url}"
-    return f'<a href="{slack_endpoint_url}">Add to Slack</a>'
+    # This function is adopted from Slack documentation.
+
+    return f'<a href="{SlackConfig.slack_endpoint_url}">Add to Slack</a>'
 
 
 @bp.route("/slack/finish_auth", methods=["GET", "POST"])
 def post_install():
-    local_post_install_url = "http://bakalarka3.borysek:5000/api/debug/slack/finish_auth"
+    # This function is adopted from Slack documentation.
 
     # Retrieve the auth code from the request params
     auth_code = request.args['code']
@@ -316,6 +316,6 @@ def post_install():
         client_id=SlackConfig.client_id,
         client_secret=SlackConfig.client_secret,
         code=auth_code,
-        redirect_uri=local_post_install_url
+        redirect_uri=SlackConfig.local_post_install_url
     )
     return response.data, response.status_code
