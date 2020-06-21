@@ -814,3 +814,19 @@ class SlackConnections(Base, UniqueModel):
 
     def __str__(self):
         return f"{self.user_id}, {self.channel_name}"
+
+
+class TmpRandomCodes(Base, UniqueModel):
+    __tablename__ = 'tmprandomcodes'
+    __uniqueColumns__ = ['code']
+    __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
+
+    id = db.Column(db.Integer, primary_key=True)
+    timestamp = db.Column(NumericTimestamp, default=datetime_to_timestamp(datetime.datetime.now()))
+    expires = db.Column(NumericTimestamp)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship("User")
+
+    code = db.Column(db.String, unique=True, index=True)
+    activity = db.Column(db.String)
