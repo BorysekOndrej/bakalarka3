@@ -301,21 +301,5 @@ def pre_install():
 
 @bp.route("/slack/finish_auth", methods=["GET", "POST"])
 def post_install():
-    # This function is adopted from Slack documentation.
-
-    # Retrieve the auth code from the request params
-    auth_code = request.args['code']
-
-    from slack import WebClient
-
-    # An empty string is a valid token for this request
-    client = WebClient(token="")
-
-    # Request the auth tokens from Slack
-    response = client.oauth_v2_access(
-        client_id=SlackConfig.client_id,
-        client_secret=SlackConfig.client_secret,
-        code=auth_code,
-        redirect_uri=SlackConfig.local_post_install_url
-    )
-    return response.data, response.status_code
+    import app.utils.notifications_slack as notifications_slack
+    return notifications_slack.finish_auth()
