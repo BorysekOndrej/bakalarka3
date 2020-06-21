@@ -84,6 +84,12 @@ class NotificationsConfig(object):
     default_pre_expiration_periods_in_days = "1,7,14,30,151"
 
 
+class SlackConfig(object):
+    client_id = os.environ["SLACK_CLIENT_ID"]
+    client_secret = os.environ["SLACK_CLIENT_SECRET"]
+    oauth_scope = os.environ["SLACK_BOT_SCOPE"]
+
+
 class MailConfig(object):
     enabled = False
     hostname = "localhost"

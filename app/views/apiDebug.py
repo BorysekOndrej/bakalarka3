@@ -3,7 +3,7 @@ import json
 import random
 
 from flask import Blueprint
-from config import FlaskConfig
+from config import FlaskConfig, SlackConfig
 
 bp = Blueprint('apiDebug', __name__)
 
@@ -290,3 +290,32 @@ def test_slack():
     ok = notifications_slack.send_message("test1", api_token)
     status_code = 200 if ok else 400
     return f'{ok}', status_code
+
+
+@bp.route("/slack/begin_auth", methods=["GET"])
+def pre_install():
+    local_post_install_url = "http://bakalarka3.borysek:5000/api/debug/slack/finish_auth"
+    slack_endpoint_url = f"https://slack.com/oauth/v2/authorize?scope={ SlackConfig.oauth_scope }&client_id={ SlackConfig.client_id }&redirect_uri={local_post_install_url}"
+    return f'<a href="{slack_endpoint_url}">Add to Slack</a>'
+
+
+@bp.route("/slack/finish_auth", methods=["GET", "POST"])
+def post_install():
+    local_post_install_url = "http://bakalarka3.borysek:5000/api/debug/slack/finish_auth"
+
+    # Retrieve the auth code from the request params
+    auth_code = request.args['code']
+
+    from slack import WebClient
+
+    # An empty string is a valid token for this request
+    client = WebClient(token="")
+
+    # Request the auth tokens from Slack
+    response = client.oauth_v2_access(
+        client_id=SlackConfig.client_id,
+        client_secret=SlackConfig.client_secret,
+        code=auth_code,
+        redirect_uri=local_post_install_url
+    )
+    return response.data, response.status_code
