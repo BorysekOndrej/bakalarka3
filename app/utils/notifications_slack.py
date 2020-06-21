@@ -52,6 +52,8 @@ def save_slack_config(response_data, user_id):
     new_slack_connection.channel_id = response_data["incoming_webhook"]["channel_id"]
     new_slack_connection.access_token = response_data["access_token"]
     new_slack_connection.webhook_url = response_data["incoming_webhook"]["url"]
+    new_slack_connection.team_id = response_data["team"]["id"]
+    new_slack_connection.team_name = response_data["team"]["name"]
 
     res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.SlackConnectionsSchema,
                                                                    new_slack_connection)

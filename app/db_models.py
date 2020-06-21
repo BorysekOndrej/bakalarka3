@@ -809,6 +809,10 @@ class SlackConnections(Base, UniqueModel):
 
     channel_id = db.Column(db.String)
     channel_name = db.Column(db.String)
+
+    team_id = db.Column(db.String)
+    team_name = db.Column(db.String)
+
     access_token = db.Column(db.String)
     webhook_url = db.Column(db.String)
 
@@ -818,6 +822,8 @@ class SlackConnections(Base, UniqueModel):
     def as_dict(self):
         return {'channel_id': self.channel_id,
                 'channel_name': self.channel_name,
+                'team_id': self.team_id,
+                'team_name': self.team_name,
                 }
 
 
