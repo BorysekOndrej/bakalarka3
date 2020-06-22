@@ -360,6 +360,7 @@ def slack_oauth_callback():
     return notifications_slack.validate_code_and_save(auth_code, res.user_id)
 
 
+# security: This might leave private information in access log. Consider better option.
 @bp.route('/slack_connections/<string:team_id>/<string:channel_id>', methods=['DELETE'])
 @flask_jwt_extended.jwt_required
 def api_slack_connection_delete(team_id: str = None, channel_id: str = None):
