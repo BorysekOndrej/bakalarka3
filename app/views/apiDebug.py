@@ -357,7 +357,11 @@ def slack_oauth_callback():
     res: db_models.TmpRandomCodes = res_or_error_msg
 
     import app.utils.notifications_slack as notifications_slack
-    return notifications_slack.validate_code_and_save(auth_code, res.user_id)
+    ok = notifications_slack.validate_code_and_save(auth_code, res.user_id)
+    if ok:
+        return 'OK. Window will close in 2 seconds. <script>setTimeout(function(){ close() }, 2000);</script>', 200
+    return 'fail', 500
+
 
 
 # security: This might leave private information in access log. Consider better option.

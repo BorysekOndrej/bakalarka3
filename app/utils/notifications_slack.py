@@ -25,7 +25,7 @@ def send_message(msg, api_token=None, channel='#notificationstest'):
     return True
 
 
-def validate_code_and_save(auth_code, user_id):
+def validate_code_and_save(auth_code, user_id) -> bool:
     # This function is adopted from Slack documentation.
 
     # An empty string is a valid token for this request
@@ -42,7 +42,8 @@ def validate_code_and_save(auth_code, user_id):
         save_slack_config(response.data, user_id)
     else:
         logger.warning(response.data)
-    return response.data, response.status_code
+    logger.debug((response.data, response.status_code))
+    return response.data["ok"]
 
 
 def save_slack_config(response_data, user_id):
