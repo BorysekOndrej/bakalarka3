@@ -188,6 +188,11 @@ def api_login():
     username = request.json.get('username', None)
     password = request.json.get('password', None)
 
+    return action_login(username, password)
+
+
+def action_login(username, password) -> Tuple[str, int]:
+    USERNAME_PASSWORD_NOT_FOUND_MSG = "Bad username or password"
     msg = ""
 
     if not username:
@@ -205,17 +210,17 @@ def api_login():
         .first()
 
     if res is None:
-        return jsonify({"msg": "Bad username or password"}), 401
+        return jsonify({"msg": USERNAME_PASSWORD_NOT_FOUND_MSG}), 401
 
     # todo: check bogus password even when username doesn't exist to eliminate timing attack
     res: db_models.User
     is_password_valid: bool = authentication_utils.check_password(res.password_hash, password)
 
     if not is_password_valid:
-        return jsonify({"msg": "Bad username or password"}), 401  # todo: make sure 401 msgs are same
+        return jsonify({"msg": USERNAME_PASSWORD_NOT_FOUND_MSG}), 401
 
     identity = {"id": res.id, "username": res.username}
-    access_token = flask_jwt_extended.create_access_token(identity=identity, fresh=True) # todo: check expires
+    access_token = flask_jwt_extended.create_access_token(identity=identity, fresh=True)
     refresh_token = flask_jwt_extended.create_refresh_token(identity=identity)
     response_object = jsonify(access_token=access_token)
     response_object: flask.Response
@@ -525,3 +530,32 @@ def api_scan_result_history(user_id=None, x_days=30):
 @bp.route('/ct_get_subdomains/<string:domain>')
 def api_ct_get_subdomains(domain):
     return jsonify({"hostname": domain, "result": ct_search.get_subdomains_from_ct(domain)})
+
+
+# security: rate limit
+# security: consider requiring jwt
+@bp.route('/user/change_password', methods=['POST'])
+def api_change_password():
+    if not request.is_json:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+
+    username = request.json.get('username', None)
+    old_password = request.json.get('old_password', None)
+    new_password = request.json.get('new_password', None)
+
+    login_msg, login_status_code = action_login(username, old_password)
+    if login_status_code != 200:
+        return login_msg, login_status_code
+
+    if new_password is None or len(new_password) == 0:
+        return jsonify({"msg": "Missing new password parameter."}), 400  # todo: consider concatenating with other error msgs
+
+    res = db_models.db.session \
+        .query(db_models.User) \
+        .filter(db_models.User.username == username) \
+        .first()
+    res.password_hash = authentication_utils.generate_password_hash(new_password)
+
+    db_models.db.session.commit()
+
+    return "ok", 200
