@@ -5,6 +5,11 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
+class ServerLocation(object):
+    address = '0.0.0.0'
+    port = 5000
+
+
 class LogConfig(object):
     log_folder = 'log' + '/'
     cors_level = logging.INFO
