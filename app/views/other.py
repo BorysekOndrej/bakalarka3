@@ -7,8 +7,9 @@ from flask import render_template
 @bp.route('/')
 @bp.route('/index')
 def index():
-    test_arg = [{"title": "title1", "content": "content1"}, {"title": "title2", "content": "content2"}]
-    return render_template('index.html', title='Page title', test_arg=test_arg)
+    # test_arg = [{"title": "title1", "content": "content1"}, {"title": "title2", "content": "content2"}]
+    test_arg = []
+    return render_template('index.html', title='Test index page', test_arg=test_arg)
 
 
 @bp.route('/dashboard')
