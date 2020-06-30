@@ -8,8 +8,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class ServerLocation(object):
     address = '0.0.0.0'
     port = 5000
-    traffic_comming_through_proxy = False
-    traffic_comming_through_cloudflare = False
+    traffic_coming_through_proxy = os.environ.get('TRAFFIC_COMING_THROUGH_PROXY') or False
+    traffic_coming_through_cloudflare = os.environ.get('TRAFFIC_COMING_THROUGH_CLOUDFLARE') or False
 
 
 class LogConfig(object):
