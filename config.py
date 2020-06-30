@@ -8,6 +8,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class ServerLocation(object):
     address = '0.0.0.0'
     port = 5000
+    traffic_comming_through_proxy = False
+    traffic_comming_through_cloudflare = False
 
 
 class LogConfig(object):

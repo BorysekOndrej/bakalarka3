@@ -7,6 +7,7 @@ from flask_jwt_extended import create_access_token, jwt_refresh_token_required, 
 
 import app.utils.randomCodes as randomCodes
 from config import FlaskConfig, SlackConfig
+from app.utils.http_request_util import get_client_ip
 
 bp = Blueprint('apiDebug', __name__)
 
@@ -401,3 +402,13 @@ def api_slack_connections_get():
             result_arr.append(x.as_dict())
 
     return jsonify(result_arr)
+
+
+@bp.route('/connecting_ip', methods=['GET'])
+def debug_connecting_ip():
+    return jsonify({
+        "CF-IPCountry": request.headers.get("CF-IPCountry"),
+        "CF-Connecting-IP": request.headers.get("CF-Connecting-IP"),
+        "X-Forwarded-For": request.headers.get("X-Forwarded-For"),
+        "presumed_original_ip": get_client_ip()
+    }), 200
