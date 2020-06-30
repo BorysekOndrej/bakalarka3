@@ -8,8 +8,13 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class ServerLocation(object):
     address = '0.0.0.0'
     port = 5000
-    traffic_coming_through_proxy = os.environ.get('TRAFFIC_COMING_THROUGH_PROXY') or False
-    traffic_coming_through_cloudflare = os.environ.get('TRAFFIC_COMING_THROUGH_CLOUDFLARE') or False
+
+    # The correct determination of client IP is important for rate limiting of non-authenticated endpoints.
+    # Remember that HTTP headers might be spoofed, unless nginx proxy whitelists origins.
+    # If you're not sure, make GET to /api/debug/connecting_ip to check your current values.
+    trust_http_CF_Connecting_IP = os.environ.get('TRUST_HTTP_CF_CONNECTING_IP') or False  # Actual HTTP header is CF-Connecting-IP
+    trust_http_X_REAL_IP = os.environ.get('TRUST_HTTP_X_REAL_IP') or False  # Actual HTTP header is X-Real-IP
+    trust_http_last_X_FORWARDED_FOR = os.environ.get('TRUST_HTTP_X_FORWARDED_FOR') or False  # Actual HTTP header is X-Forwarded-For
 
 
 class LogConfig(object):

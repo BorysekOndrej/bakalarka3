@@ -407,8 +407,8 @@ def api_slack_connections_get():
 @bp.route('/connecting_ip', methods=['GET'])
 def debug_connecting_ip():
     return jsonify({
-        "CF-IPCountry": request.headers.get("CF-IPCountry"),
         "CF-Connecting-IP": request.headers.get("CF-Connecting-IP"),
         "X-Forwarded-For": request.headers.get("X-Forwarded-For"),
+        "X-Real-IP": request.headers.get("X-Real-IP"),
         "presumed_original_ip": get_client_ip()
     }), 200
