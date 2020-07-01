@@ -867,3 +867,22 @@ class MailConnections(Base, UniqueModel):
                 'email': self.email,
                 'validated': self.validated,
                 }
+
+
+class ConnectionStatusOverrides(Base, UniqueModel):
+    __tablename__ = 'connectionstatusoverrides'
+    __uniqueColumns__ = ['user_id', 'target_id', 'connection_id', 'connection_type']
+    __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship("User")
+
+    target_id = db.Column(db.Integer, db.ForeignKey('targets.id'), nullable=True)
+    target = db.relationship("Target")
+
+    connection_id = db.Column(db.Integer)
+    connection_type = db.Column(db.String)
+
+    enabled = db.Column(db.Boolean)

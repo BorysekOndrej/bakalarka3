@@ -4,6 +4,7 @@ import random
 from typing import List, Optional
 
 from flask import Blueprint, redirect, request
+from sqlalchemy import or_
 
 import app.utils.randomCodes as randomCodes
 from config import FlaskConfig, SlackConfig, MailConfig
@@ -512,11 +513,32 @@ def debug_test_rate_limit_ip():
 @flask_jwt_extended.jwt_required
 def show_notification_connections(target_id=None):
     user_id = authentication_utils.get_user_id_from_current_jwt()
-    slack_connections_answer = list_connections_of_type(db_models.SlackConnections, user_id)
-    mail_connections_answer = list_connections_of_type(db_models.MailConnections, user_id)
 
-    return jsonify({
-        'slack': slack_connections_answer,
-        'mail': mail_connections_answer
-    })
+    # warning: to the keys of the following dict are tied up values in DB. Do not change.
+    db_model_types = {'slack': db_models.SlackConnections,
+                      'mail': db_models.MailConnections}
+    connection_lists = {}
+    for connection_name in db_model_types:
+        connection_lists[connection_name] = list_connections_of_type(db_model_types[connection_name], user_id)
+        for single_connection in connection_lists[connection_name]:
+            single_connection["enabled"] = True
+
+    query = db_models.db.session.query(db_models.ConnectionStatusOverrides) \
+        .filter(db_models.ConnectionStatusOverrides.user_id == user_id)
+
+    if target_id:
+        query = query.filter(or_(db_models.ConnectionStatusOverrides.target_id.is_(None),
+                                 db_models.ConnectionStatusOverrides.target_id == target_id))
+    else:
+        query = query.filter(db_models.ConnectionStatusOverrides.target_id.is_(None))
+    res = query.all()
+
+    for single_override in filter(lambda x: x.target_id is not None, res):
+        single_override: db_models.ConnectionStatusOverrides
+        for single_connection in connection_lists[single_override.connection_type]:
+            if single_override.connection_id == single_connection["id"]:
+                single_connection["enabled"] = single_override.enabled
+                break
+
+    return jsonify(connection_lists)
 
