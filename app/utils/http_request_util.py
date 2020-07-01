@@ -3,6 +3,7 @@ from flask_limiter import Limiter
 
 import config
 # from app.db_models import logger
+from app.utils.authentication_utils import get_user_id_from_current_jwt
 
 HTTP_HEADER_CLOUDFLARE_IP_HEADER = 'CF-Connecting-IP'
 HTTP_HEADER_X_REAL_IP = 'X-Real-IP'
@@ -32,6 +33,15 @@ def get_client_ip():
     return request.remote_addr
 
 
-limiter = Limiter(default_limits=[], key_func=get_client_ip)
+def rate_limit_key():
+    user_id = get_user_id_from_current_jwt()
+    key = f'client_ip:{get_client_ip()}'
+    if user_id:
+        key = f'user_id:{user_id}'
+    return key
+
+
+limiter = Limiter(default_limits=[], key_func=rate_limit_key)
 
 # todo: consider whether JSON endpoints should receive JSON response
+# todo: consider scenario when attacker creates multiple accounts and uses JWT enabled endpoints for DDOS

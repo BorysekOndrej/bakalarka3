@@ -1,13 +1,13 @@
 from typing import Optional
 
 import flask_jwt_extended
+from flask_jwt_extended import JWTManager
 from werkzeug.security import generate_password_hash, check_password_hash
 # werkzeug.security provides salting internally, which is amazing
 
-import app
 import config
 
-jwt_instance = app.jwt
+jwt_instance = JWTManager()
 
 
 def hash_password(password: str) -> str:

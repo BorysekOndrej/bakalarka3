@@ -3,11 +3,10 @@ import json
 import random
 
 from flask import Blueprint, redirect, request
-from flask_jwt_extended import create_access_token, jwt_refresh_token_required, verify_jwt_refresh_token_in_request
 
 import app.utils.randomCodes as randomCodes
 from config import FlaskConfig, SlackConfig
-from app.utils.http_request_util import get_client_ip
+from app.utils.http_request_util import get_client_ip, limiter
 
 bp = Blueprint('apiDebug', __name__)
 
@@ -29,7 +28,6 @@ import app.utils.extract_test as extract_test
 import app.utils.authentication_utils as authentication_utils
 import app.utils.normalize_jsons as normalize_jsons
 import app.object_models as object_models
-from flask_limiter import Limiter
 
 
 @bp.route('/sslyze_get_direct_scan/<string:domain>')
@@ -414,5 +412,6 @@ def debug_connecting_ip():
 
 
 @bp.route('/rate_limit_ip', methods=['GET'])
+@limiter.limit("1/second")
 def debug_test_rate_limit_ip():
     return "ok", 200

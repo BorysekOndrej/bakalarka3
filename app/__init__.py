@@ -3,10 +3,10 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
-from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import rq_dashboard
 from app.utils.http_request_util import limiter
+from app.utils.authentication_utils import jwt_instance
 
 import config
 
@@ -19,7 +19,6 @@ db = SQLAlchemy()
 ma = Marshmallow()
 migrate = Migrate()
 
-jwt = JWTManager()
 cors = CORS(resources={r"/api/*": {"origins": ["http://bakalarka3.borysek:8080",
                                                "http://bakalarka3.borysek:5000"]}},
             supports_credentials=True)
@@ -46,7 +45,7 @@ def create_app():
             migrate.init_app(app_new, db)
 
     ma.init_app(app_new)
-    jwt.init_app(app_new)
+    jwt_instance.init_app(app_new)
     cors.init_app(app_new)
 
     with app_new.app_context():
