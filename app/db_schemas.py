@@ -268,17 +268,6 @@ class ScanResultsSchema(SQLAlchemyAutoSchema):
     tlsv13 = Nested(CipherSuiteScanResultSchema)
 
 
-# Notifications
-class NotificationSettingsSchema(SQLAlchemyAutoSchema):
-    class Meta(BaseSchema.Meta):
-        model = app.db_models.NotificationSettings
-        include_relationships = True
-        include_fk = True  # this needs to be enabled for schema.load to work properly
-
-    target = Nested(TargetSchema)
-    user = Nested(UserSchema)
-
-
 class ScanResultsHistorySchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
         model = app.db_models.ScanResultsHistory

@@ -1,5 +1,6 @@
 import datetime
 import json
+from itertools import chain
 from typing import Optional, List, Dict, Tuple
 
 from sqlalchemy import or_
@@ -25,11 +26,11 @@ def can_user_get_target_definition_by_id(target_id: int, user_id: int) -> bool:
 
 
 def full_target_settings_to_dict(target: db_models.Target, scan_order: db_models.ScanOrder,
-                                 notifications: db_models.NotificationSettings) -> dict:
+                                 notifications: dict) -> dict:
     return {
         "target": db_schemas.TargetSchema().dump(target),
         "scanOrder": db_schemas.ScanOrderSchema(only=("periodicity", "active")).dump(scan_order),
-        "notifications": db_schemas.NotificationSettingsSchema(only=["preferences"]).dump(notifications).get("preferences", {})
+        "notifications": notifications
     }
 
 
@@ -141,7 +142,22 @@ def list_connections_of_type(db_model, user_id) -> List[dict]:
     return result_arr
 
 
+def merge_dict_by_strategy(more_general: dict, more_specific: dict) -> dict:
+    preference_merge_strategy = more_specific.get("preference_merge_strategy", "classic")
+    if preference_merge_strategy == "classic":
+        return {**more_general, **more_specific}
+    if preference_merge_strategy == "more_general_only":
+        return more_general
+    if preference_merge_strategy == "more_specific_only":
+        return more_specific
+
+    logger.warning("Unknown preference_merge_strategy. Overriding to classic.")
+    return {**more_general, **more_specific}
+
+
 def get_effective_notification_settings(user_id: int, target_id: int) -> Optional[dict]:
+    # Todo: This is prime suspect for redis caching. Otherwise notification scheduler will be doing a coffin dance.
+
     # warning: to the keys of the following dict are tied up values in DB. Do not change.
     db_model_types = {'slack': db_models.SlackConnections,
                       'mail': db_models.MailConnections}
@@ -149,7 +165,11 @@ def get_effective_notification_settings(user_id: int, target_id: int) -> Optiona
     for connection_name in db_model_types:
         connection_lists[connection_name] = list_connections_of_type(db_model_types[connection_name], user_id)
         for single_connection in connection_lists[connection_name]:
-            single_connection["enabled"] = True
+            single_connection['enabled'] = True
+            if connection_name == 'mail' and single_connection['validated'] == False:
+                single_connection['enabled'] = False
+                single_connection['notice'] = "Email connection can't be considered enabled until it's validated."
+            single_connection['preferences'] = {}
 
     query = db_models.db.session.query(db_models.ConnectionStatusOverrides) \
         .filter(db_models.ConnectionStatusOverrides.user_id == user_id)
@@ -161,11 +181,13 @@ def get_effective_notification_settings(user_id: int, target_id: int) -> Optiona
         query = query.filter(db_models.ConnectionStatusOverrides.target_id.is_(None))
     res = query.all()
 
-    for single_override in filter(lambda x: x.target_id is not None, res):
+    for single_override in chain(filter(lambda x: x.target_id is None, res),
+                                 filter(lambda x: x.target_id is not None, res)):
         single_override: db_models.ConnectionStatusOverrides
         for single_connection in connection_lists[single_override.connection_type]:
             if single_override.connection_id == single_connection["id"]:
                 single_connection["enabled"] = single_override.enabled
+                merge_dict_by_strategy(single_connection["preferences"], single_override.preferences)
                 break
 
     return connection_lists

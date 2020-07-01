@@ -9,6 +9,7 @@ from loguru import logger
 
 import config
 import app.utils.db_utils as db_utils
+from app.actions import merge_dict_by_strategy, get_effective_notification_settings
 
 
 class Channels (Enum):
@@ -20,19 +21,6 @@ class EventType (Enum):
     ClosingExpiration = 1
     AlreadyExpired = 2
     GradeLowered = 3
-
-
-def merge_notification_preferences(more_general: dict, more_specific: dict) -> dict:
-    preference_merge_strategy = more_specific.get("preference_merge_strategy", "classic")
-    if preference_merge_strategy == "classic":
-        return {**more_general, **more_specific}
-    if preference_merge_strategy == "more_general_only":
-        return more_general
-    if preference_merge_strategy == "more_specific_only":
-        return more_specific
-
-    logger.warning("Unknown preference_merge_strategy. Overriding to classic.")
-    return {**more_general, **more_specific}
 
 
 class Notification(object):
@@ -96,57 +84,36 @@ def get_scan_data_for_notifications_scheduler(limit_to_following_target_ids: Opt
     return res_all_active
 
 
-def get_notification_settings_for_notifications_scheduler(user_ids: Set[int]) -> List[db_models.NotificationSettings]:
-    notifications_settings_for_users = db_models.db.session \
-        .query(db_models.NotificationSettings) \
-        .filter(db_models.NotificationSettings.user_id.in_(list(user_ids))) \
-        .all()
-    return notifications_settings_for_users
-
-
 def schedule_notifications(limit_to_following_target_ids: Optional[List[int]] = None):
     # Param limit_to_following_targets is used when we want to imediately send notifications on completed scan.
 
     main_data = get_scan_data_for_notifications_scheduler(limit_to_following_target_ids)
-    # ScanOrder, Target, LastScan, ScanResults, User, Notifications
-    users_with_active_scan_orders = set([res.ScanOrder.user_id for res in main_data])
-    notification_settings = get_notification_settings_for_notifications_scheduler(users_with_active_scan_orders)
+    # ScanOrder, Target, LastScan, ScanResults
+    # users_with_active_scan_orders = set([res.ScanOrder.user_id for res in main_data])
 
     all_new_notifications = []
 
-    all_new_notifications.extend(expiring_notifications(main_data, notification_settings))
+    all_new_notifications.extend(expiring_notifications(main_data))
 
     return send_notifications(all_new_notifications)
 
 
-def make_dict_notification_settings_by_scan_order_id(main_data, notification_settings):
+def make_dict_notification_settings_by_scan_order_id(main_data):
     notification_settings_by_scan_order_id = {}
 
     for single_res in main_data:
-        key = single_res.ScanOrder.id
+        scan_order_id = single_res.ScanOrder.id
         user_id = single_res.ScanOrder.user_id
         target_id = single_res.ScanOrder.target_id
 
-        val1 = list(filter(lambda x: x.user_id == user_id and
-                                     (x.target_id is None or x.target_id == target_id),
-                           notification_settings))
-
-        user_level_notification_obj = list(filter(lambda x: x.target_id is None, val1))
-        target_level_notification_obj = list(filter(lambda x: x.target_id == target_id, val1))
-
-        user_level_settings = user_level_notification_obj[0].preferences if user_level_notification_obj else {}
-        target_level_settings = target_level_notification_obj[0].preferences if target_level_notification_obj else {}
-
-        final_settings = merge_notification_preferences(user_level_settings, target_level_settings)
-
-        notification_settings_by_scan_order_id[key] = final_settings
+        notification_settings_by_scan_order_id[scan_order_id] = get_effective_notification_settings(user_id, target_id)
 
     return notification_settings_by_scan_order_id
 
 
-def expiring_notifications(main_data, notification_settings) -> List[Notification]:
+def expiring_notifications(main_data) -> List[Notification]:
     expiration_by_target_id = {}
-    notification_settings_by_scan_order_id = make_dict_notification_settings_by_scan_order_id(main_data, notification_settings)
+    notification_settings_by_scan_order_id = make_dict_notification_settings_by_scan_order_id(main_data)
 
     for single_res in main_data:
         key = single_res.Target.id

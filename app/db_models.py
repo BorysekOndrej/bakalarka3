@@ -711,23 +711,6 @@ class ScanResults(Base, UniqueModel):
     tlsv13 = db.relationship("CipherSuiteScanResult", foreign_keys=[tlsv13_id])
 
 
-# Notifications
-class NotificationSettings(Base, UniqueModel):
-    __tablename__ = 'notificationsettings'
-    __uniqueColumns__ = ['target_id', 'user_id']
-    __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    user = db.relationship("User")
-
-    target_id = db.Column(db.Integer, db.ForeignKey('targets.id'), nullable=True)
-    target = db.relationship("Target")
-
-    preferences = db.Column(db.JSON)
-
-
 class ScanResultsHistory(Base, UniqueModel):
     __tablename__ = 'scanresultshistory'
     __uniqueColumns__ = ['target_id', 'scanresult_id']
@@ -886,3 +869,4 @@ class ConnectionStatusOverrides(Base, UniqueModel):
     connection_type = db.Column(db.String)
 
     enabled = db.Column(db.Boolean)
+    preferences = db.Column(db.JSON)

@@ -57,17 +57,6 @@ def get_target_id(target_def=None):
     return jsonify({"id": target.id}), 200
 
 
-@bp.route('/get_target_from_id/<int:target_id>', methods=['GET'])
-@flask_jwt_extended.jwt_required
-def api_get_target_from_id(target_id):
-    user_id = authentication_utils.get_user_id_from_current_jwt()
-
-    target = actions.get_target_from_id_if_user_can_see(target_id, user_id)
-    if target is None:
-        return "Target either doesn't exist or you're allowed to see it.", 400
-    return db_schemas.TargetSchema().dump(target), 200
-
-
 @bp.route('/target/<int:target_id>', methods=['GET', 'DELETE'])
 @flask_jwt_extended.jwt_required
 def api_target_by_id(target_id: int):
@@ -92,9 +81,7 @@ def api_target_by_id(target_id: int):
                                                                      {"target_id": target.id, "user_id": user_id},
                                                                      get_only=True)
 
-    notifications = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.NotificationSettingsSchema,
-                                                                        {"target_id": target.id, "user_id": user_id},
-                                                                        get_only=True)
+    notifications = actions.get_effective_notification_settings(user_id, target_id)
 
     return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
 
@@ -130,9 +117,8 @@ def api_target():
             db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema, scan_order_def)
 
         if data.get("notifications", None):
-            notifications_def = db_utils.merge_dict_with_copy_and_overwrite({"preferences": data.get("notifications", {})},
-                                                                            {"target_id": target.id, "user_id": user_id})
-            db_utils_advanced.generic_get_create_edit_from_data(db_schemas.NotificationSettingsSchema, notifications_def)
+            # todo: fix this
+            pass
 
         target_ids.add(target.id)
 
@@ -457,10 +443,10 @@ def api_get_basic_cert_info_for_target(target_id):
             }, 200
 
 
-@bp.route('/notification_settings', methods=['GET', 'POST'])
-@bp.route('/notification_settings/<int:user_id>', methods=['GET', 'POST'])
-@bp.route('/notification_settings/<int:user_id>/null', methods=['GET', 'POST'])
-@bp.route('/notification_settings/<int:user_id>/<int:target_id>', methods=['GET', 'POST'])
+@bp.route('/notification_settings', methods=['GET'])
+@bp.route('/notification_settings/<int:user_id>', methods=['GET'])
+@bp.route('/notification_settings/<int:user_id>/null', methods=['GET'])
+@bp.route('/notification_settings/<int:user_id>/<int:target_id>', methods=['GET'])
 @flask_jwt_extended.jwt_required
 def api_notification_settings(user_id=None, target_id=None):
     if user_id is None:
@@ -469,24 +455,9 @@ def api_notification_settings(user_id=None, target_id=None):
     if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
         return "Target either doesn't exist or user is not allowed to see it.", 401
 
-    get_only = request.method == "GET"
+    connection_lists = actions.get_effective_notification_settings(user_id, target_id)
+    return jsonify(connection_lists)
 
-    potentialy_new_model = db_models.NotificationSettings()
-    potentialy_new_model.user_id = user_id
-    potentialy_new_model.target_id = target_id
-
-    if not get_only:
-        potentialy_new_model.preferences = json.loads(request.data)
-
-    res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.NotificationSettingsSchema,
-                                                                   potentialy_new_model,
-                                                                   get_only=get_only)
-    if res is None:
-        return "{}", 200
-
-    res: db_models.NotificationSettings
-    logger.debug(f'notification_settings {user_id} {target_id} {res}')
-    return res.preferences, 200
 
 
 @bp.route('/scan_result_history', methods=['GET'])
