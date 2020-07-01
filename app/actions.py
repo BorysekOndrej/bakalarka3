@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Tuple
 from sqlalchemy import or_
 
 import app.scan_scheduler as scan_scheduler
+import app.utils.randomCodes
 from app import db_models, db_schemas, logger
 import app.object_models as object_models
 import app.utils.db_utils_advanced as db_utils_advanced
@@ -191,3 +192,62 @@ def get_effective_notification_settings(user_id: int, target_id: int) -> Optiona
                 break
 
     return connection_lists
+
+
+def mail_add(user_id: int, emails: str) -> Tuple[str, int]:
+    return mail_add_or_delete(user_id, emails, "POST")
+
+
+def mail_delete(user_id: int, emails: str) -> Tuple[str, int]:
+    return mail_add_or_delete(user_id, emails, "DELETE")
+
+
+def mail_add_or_delete(user_id, emails, action) -> Tuple[str, int]:
+    # this can add multiple emails at once
+    emails = set(map(str.strip, emails))
+
+    max_n_emails = 100
+    if len(emails) > max_n_emails:
+        return f"Possible abuse, can add at most {max_n_emails} emails at once. Aborting request.", 400
+
+    existing_mail_connections: Optional[List[db_models.MailConnections]] = db_models.db.session\
+        .query(db_models.MailConnections)\
+        .filter(db_models.MailConnections.user_id == user_id) \
+        .filter(db_models.MailConnections.email.in_(list(emails)))\
+        .all()
+
+    if action == "DELETE":
+        if existing_mail_connections:
+            for existing_mail in existing_mail_connections:
+                db_models.db.session.delete(existing_mail)
+            db_models.db.session.commit()
+        return f"removed {len(existing_mail_connections)} emails", 200
+
+    if existing_mail_connections:
+        for existing_mail in existing_mail_connections:
+            emails.remove(existing_mail.email)
+
+    for single_email in emails:
+        # todo: remove emails that are not valid emails
+        pass
+
+    for single_email in emails:
+        new_mail = db_models.MailConnections()
+        new_mail.user_id = user_id
+        new_mail.email = single_email
+        db_models.db.session.add(new_mail)
+    db_models.db.session.commit()
+
+    tmp_codes = []  # security: todo: remove this
+
+    for single_email in emails:
+        db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.MAIL_VALIDATION,
+                                                          user_id=user_id,
+                                                          expire_in_n_minutes=30,
+                                                          params=single_email
+                                                          )
+        # todo: send email to that email address with db_code. Possibly use queue?
+        tmp_codes.append(db_code)  # security: todo: remove this
+
+    return str(tmp_codes), 200  # security: todo: remove this
+
