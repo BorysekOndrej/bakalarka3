@@ -6,6 +6,7 @@ from flask_marshmallow import Marshmallow
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import rq_dashboard
+from app.utils.http_request_util import limiter
 
 import config
 
@@ -49,6 +50,8 @@ def create_app():
     cors.init_app(app_new)
 
     with app_new.app_context():
+        limiter.init_app(app_new)
+
         from app.views.apiV1 import bp as api_v1
         app_new.register_blueprint(api_v1, url_prefix='/api/v1')
 

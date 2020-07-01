@@ -29,6 +29,7 @@ import app.utils.extract_test as extract_test
 import app.utils.authentication_utils as authentication_utils
 import app.utils.normalize_jsons as normalize_jsons
 import app.object_models as object_models
+from flask_limiter import Limiter
 
 
 @bp.route('/sslyze_get_direct_scan/<string:domain>')
@@ -412,3 +413,8 @@ def debug_connecting_ip():
         "X-Real-IP": request.headers.get("X-Real-IP"),
         "presumed_original_ip": get_client_ip()
     }), 200
+
+
+@bp.route('/rate_limit_ip', methods=['GET'])
+def debug_test_rate_limit_ip():
+    return "ok", 200

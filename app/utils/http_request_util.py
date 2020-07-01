@@ -1,6 +1,8 @@
 from flask import request
+from flask_limiter import Limiter
+
 import config
-from app.db_models import logger
+# from app.db_models import logger
 
 HTTP_HEADER_CLOUDFLARE_IP_HEADER = 'CF-Connecting-IP'
 HTTP_HEADER_X_REAL_IP = 'X-Real-IP'
@@ -20,7 +22,7 @@ def get_client_ip():
         try:
             return request.headers.get(HTTP_HEADER_X_FORWARDED_FOR).split(",")[-1].strip()
         except:
-            logger.warning(f'{HTTP_HEADER_X_REAL_IP}: {request.headers.get(HTTP_HEADER_X_FORWARDED_FOR)} failed split')
+            # logger.warning(f'{HTTP_HEADER_X_REAL_IP}: {request.headers.get(HTTP_HEADER_X_FORWARDED_FOR)} failed split')
             pass
 
     # security: If none of the above headers are present and trusted, then the connecting IP is used.
@@ -28,3 +30,8 @@ def get_client_ip():
     #  rate limiting the proxy as a whole. So be careful with the settings and provide and enable at least one header
     #  when using proxy.
     return request.remote_addr
+
+
+limiter = Limiter(default_limits=[], key_func=get_client_ip)
+
+# todo: consider whether JSON endpoints should receive JSON response
