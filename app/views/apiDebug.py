@@ -362,7 +362,7 @@ def slack_oauth_callback():
     return 'fail', 500
 
 
-def list_connections_of_type(db_model, user_id):
+def list_connections_of_type(db_model, user_id) -> List[dict]:
     connections = db_models.db.session \
         .query(db_model) \
         .filter(db_model.user_id == user_id) \
@@ -373,14 +373,14 @@ def list_connections_of_type(db_model, user_id):
         for x in connections:
             result_arr.append(x.as_dict())
 
-    return jsonify(result_arr)
+    return result_arr
 
 
 @bp.route('/mail_connections', methods=['GET'])
 @flask_jwt_extended.jwt_required
 def mail_connections():
     user_id = authentication_utils.get_user_id_from_current_jwt()
-    return list_connections_of_type(db_models.MailConnections, user_id)
+    return jsonify(list_connections_of_type(db_models.MailConnections, user_id))
 
 
 @bp.route("/mail_connections/delete", methods=["DELETE"])
@@ -487,7 +487,7 @@ def api_slack_connection_delete(team_id: str = None, channel_id: str = None):
 @flask_jwt_extended.jwt_required
 def api_slack_connections_get():
     user_id = authentication_utils.get_user_id_from_current_jwt()
-    return list_connections_of_type(db_models.SlackConnections, user_id)
+    return jsonify(list_connections_of_type(db_models.SlackConnections, user_id))
 
 
 
@@ -505,3 +505,18 @@ def debug_connecting_ip():
 @limiter.limit("1/second")
 def debug_test_rate_limit_ip():
     return "ok", 200
+
+
+@bp.route('/notification_connections', methods=['GET'])
+@bp.route('/notification_connections/<string:target_id>', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def show_notification_connections(target_id=None):
+    user_id = authentication_utils.get_user_id_from_current_jwt()
+    slack_connections_answer = list_connections_of_type(db_models.SlackConnections, user_id)
+    mail_connections_answer = list_connections_of_type(db_models.MailConnections, user_id)
+
+    return jsonify({
+        'slack': slack_connections_answer,
+        'mail': mail_connections_answer
+    })
+

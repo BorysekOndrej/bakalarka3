@@ -820,7 +820,8 @@ class SlackConnections(Base, UniqueModel):
         return f"{self.user_id}, {self.channel_name}"
 
     def as_dict(self):
-        return {'channel_id': self.channel_id,
+        return {'id': self.id,
+                'channel_id': self.channel_id,
                 'channel_name': self.channel_name,
                 'team_id': self.team_id,
                 'team_name': self.team_name,
@@ -862,6 +863,7 @@ class MailConnections(Base, UniqueModel):
         return f"{self.email}, {self.validated}"
 
     def as_dict(self):
-        return {'email': self.email,
+        return {'id': self.id,
+                'email': self.email,
                 'validated': self.validated,
                 }
