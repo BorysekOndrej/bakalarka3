@@ -508,12 +508,7 @@ def debug_test_rate_limit_ip():
     return "ok", 200
 
 
-@bp.route('/notification_connections', methods=['GET'])
-@bp.route('/notification_connections/<string:target_id>', methods=['GET'])
-@flask_jwt_extended.jwt_required
-def show_notification_connections(target_id=None):
-    user_id = authentication_utils.get_user_id_from_current_jwt()
-
+def get_effective_notification_settings(user_id: int, target_id: int) -> Optional[dict]:
     # warning: to the keys of the following dict are tied up values in DB. Do not change.
     db_model_types = {'slack': db_models.SlackConnections,
                       'mail': db_models.MailConnections}
@@ -540,5 +535,14 @@ def show_notification_connections(target_id=None):
                 single_connection["enabled"] = single_override.enabled
                 break
 
+    return connection_lists
+
+
+@bp.route('/notification_connections', methods=['GET'])
+@bp.route('/notification_connections/<string:target_id>', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def show_notification_connections(target_id=None):
+    user_id = authentication_utils.get_user_id_from_current_jwt()
+    connection_lists = get_effective_notification_settings(user_id, target_id)
     return jsonify(connection_lists)
 
