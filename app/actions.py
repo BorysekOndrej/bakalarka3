@@ -2,6 +2,8 @@ import datetime
 import json
 from typing import Optional, List, Dict, Tuple
 
+from sqlalchemy import or_
+
 import app.scan_scheduler as scan_scheduler
 from app import db_models, db_schemas, logger
 import app.object_models as object_models
@@ -123,3 +125,47 @@ def get_scan_history(user_id: int, x_days: int = 30):  # -> Optional[Tuple[db_mo
         .all()
 
     return res
+
+
+def list_connections_of_type(db_model, user_id) -> List[dict]:
+    connections = db_models.db.session \
+        .query(db_model) \
+        .filter(db_model.user_id == user_id) \
+        .all()
+
+    result_arr = []
+    if connections:
+        for x in connections:
+            result_arr.append(x.as_dict())
+
+    return result_arr
+
+
+def get_effective_notification_settings(user_id: int, target_id: int) -> Optional[dict]:
+    # warning: to the keys of the following dict are tied up values in DB. Do not change.
+    db_model_types = {'slack': db_models.SlackConnections,
+                      'mail': db_models.MailConnections}
+    connection_lists = {}
+    for connection_name in db_model_types:
+        connection_lists[connection_name] = list_connections_of_type(db_model_types[connection_name], user_id)
+        for single_connection in connection_lists[connection_name]:
+            single_connection["enabled"] = True
+
+    query = db_models.db.session.query(db_models.ConnectionStatusOverrides) \
+        .filter(db_models.ConnectionStatusOverrides.user_id == user_id)
+
+    if target_id:
+        query = query.filter(or_(db_models.ConnectionStatusOverrides.target_id.is_(None),
+                                 db_models.ConnectionStatusOverrides.target_id == target_id))
+    else:
+        query = query.filter(db_models.ConnectionStatusOverrides.target_id.is_(None))
+    res = query.all()
+
+    for single_override in filter(lambda x: x.target_id is not None, res):
+        single_override: db_models.ConnectionStatusOverrides
+        for single_connection in connection_lists[single_override.connection_type]:
+            if single_override.connection_id == single_connection["id"]:
+                single_connection["enabled"] = single_override.enabled
+                break
+
+    return connection_lists
