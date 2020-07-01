@@ -362,8 +362,29 @@ def slack_oauth_callback():
     return 'fail', 500
 
 
-@bp.route("/mail/delete", methods=["DELETE"])
-@bp.route("/mail/add", methods=["POST"])
+def list_connections_of_type(db_model, user_id):
+    connections = db_models.db.session \
+        .query(db_model) \
+        .filter(db_model.user_id == user_id) \
+        .all()
+
+    result_arr = []
+    if connections:
+        for x in connections:
+            result_arr.append(x.as_dict())
+
+    return jsonify(result_arr)
+
+
+@bp.route('/mail_connections', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def mail_connections():
+    user_id = authentication_utils.get_user_id_from_current_jwt()
+    return list_connections_of_type(db_models.MailConnections, user_id)
+
+
+@bp.route("/mail_connections/delete", methods=["DELETE"])
+@bp.route("/mail_connections/add", methods=["POST"])
 @flask_jwt_extended.jwt_required
 def mail_add_or_delete():
     # this can add multiple emails at once
@@ -416,7 +437,7 @@ def mail_add_or_delete():
     return str(tmp_codes), 200  # security: todo: remove this
 
 
-@bp.route("/mail/validate/<string:db_code>", methods=["GET"])
+@bp.route("/mail_connections/validate/<string:db_code>", methods=["GET"])
 @authentication_utils.jwt_refresh_token_if_check_enabled(MailConfig.check_refresh_cookie_on_validating_email)
 def mail_validate(db_code):
     # security: using the same trick as above, i.e. requiring valid refresh cookie. todo: maybe reconsider?
@@ -466,18 +487,8 @@ def api_slack_connection_delete(team_id: str = None, channel_id: str = None):
 @flask_jwt_extended.jwt_required
 def api_slack_connections_get():
     user_id = authentication_utils.get_user_id_from_current_jwt()
+    return list_connections_of_type(db_models.SlackConnections, user_id)
 
-    slack_connections = db_models.db.session\
-        .query(db_models.SlackConnections)\
-        .filter(db_models.SlackConnections.user_id == user_id)\
-        .all()
-
-    result_arr = []
-    if slack_connections:
-        for x in slack_connections:
-            result_arr.append(x.as_dict())
-
-    return jsonify(result_arr)
 
 
 @bp.route('/connecting_ip', methods=['GET'])
