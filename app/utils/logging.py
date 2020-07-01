@@ -2,7 +2,12 @@ import logging
 from loguru import logger
 from config import LogConfig
 
-logger.add(LogConfig.log_folder + "{time}.log", backtrace=True, diagnose=True, level='DEBUG')
+# If any problems with log rotation or compression appear, it might be related to the following issue:
+# https://github.com/Delgan/loguru/issues/229
+
+logger.add(LogConfig.log_folder + "{time}.log",
+           backtrace=True, diagnose=True, level='DEBUG',
+           compression='gz', rotation="00:00", retention="35 days")
 logger.info('New instance of app.')
 
 logging.getLogger('flask_cors').level = LogConfig.cors_level
