@@ -1,6 +1,7 @@
 import datetime
 # import functools
 import random
+from loguru import logger
 
 import sqlalchemy
 from sqlalchemy import event
@@ -15,7 +16,6 @@ from sslyze.ssl_settings import TlsWrappedProtocolEnum
 from config import SchedulerConfig
 
 db = app.db
-logger = app.logger
 Base = db.Model
 
 
@@ -204,7 +204,7 @@ class LastScan(Base, UniqueModel):  # this might not have to be in DB, it might 
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            app.logger.warning(f"Failed creating last_scan with error {e}")
+            logger.warning(f"Failed creating last_scan with error {e}")
             pass
 
 

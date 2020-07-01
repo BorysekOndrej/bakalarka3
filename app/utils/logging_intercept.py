@@ -2,6 +2,9 @@ import logging
 from loguru import logger
 from config import LogConfig
 
+logger.add(LogConfig.log_folder + "{time}.log", backtrace=True, diagnose=True, level='DEBUG')
+logger.info('New instance of app.')
+
 logging.getLogger('flask_cors').level = LogConfig.cors_level
 
 # from loguru documentation

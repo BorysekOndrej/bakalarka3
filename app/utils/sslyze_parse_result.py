@@ -5,12 +5,10 @@ import app
 import app.db_models as db_models
 import app.db_schemas as db_schemas
 
-# from loguru import logger
+from loguru import logger
 import app.object_models as object_models
 import app.utils.sslyze_result_simplify as sslyze_result_simplify
 from config import SslyzeConfig
-
-logger = app.logger
 
 from sqlalchemy.exc import IntegrityError
 import json

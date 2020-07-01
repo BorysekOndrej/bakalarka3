@@ -2,6 +2,7 @@ import datetime
 import itertools
 from typing import Optional, List
 from sqlalchemy import func
+from loguru import logger
 
 import app
 import app.db_models as db_models
@@ -9,8 +10,6 @@ from config import SchedulerConfig
 import app.utils.db_utils as db_utils
 import app.utils.dns_utils as dns_utils
 import app.object_models as object_models
-
-logger = app.logger
 
 db = app.db
 

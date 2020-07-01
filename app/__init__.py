@@ -25,8 +25,7 @@ cors = CORS(resources={r"/api/*": {"origins": ["http://bakalarka3.borysek:8080",
 
 
 def create_app():
-    logger.add(config.LogConfig.log_folder + "{time}.log", backtrace=True, diagnose=True, level='DEBUG')
-    logger.info('New instance of app.')
+    import app.utils.logging_intercept
 
     app_new = Flask(__name__, instance_relative_config=True)
     app_new.config.from_object(config.FlaskConfig)
@@ -63,8 +62,6 @@ def create_app():
         if config.FlaskConfig.REDIS_ENABLED:
             app_new.config.from_object(rq_dashboard.default_settings)
             app_new.register_blueprint(rq_dashboard.blueprint, url_prefix='/debug/rq_dashboard/')
-
-        import app.utils.logging_intercept
 
         logger.info("Before DB create")
         db.create_all()

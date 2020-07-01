@@ -9,7 +9,6 @@ import copy
 import config
 import app.db_models as db_models
 
-logger = app.logger
 
 # This is generalized version of get_or_create. Previously my code used specific variant for each class.
 # This comes from Erik Taubeneck and his series of block posts about this topic.
