@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Tuple
 from sqlalchemy import or_
 
 import app.scan_scheduler as scan_scheduler
-import app.utils.randomCodes
+import app.utils.randomCodes as randomCodes
 from app import db_models, db_schemas, logger
 import app.object_models as object_models
 import app.utils.db_utils_advanced as db_utils_advanced
