@@ -522,8 +522,7 @@ def api_ct_get_subdomains(domain):
     return jsonify({"hostname": domain, "result": ct_search.get_subdomains_from_ct(domain)})
 
 
-# security: rate limit
-# security: consider requiring jwt
+# security: place stricter rate limit
 @bp.route('/user/change_password', methods=['POST'])
 def api_change_password():
     if not request.is_json:
@@ -539,6 +538,8 @@ def api_change_password():
 
     if new_password is None or len(new_password) == 0:
         return jsonify({"msg": "Missing new password parameter."}), 400  # todo: consider concatenating with other error msgs
+
+    # todo: consider password uniqueness validation
 
     res = db_models.db.session \
         .query(db_models.User) \
