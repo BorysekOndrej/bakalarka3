@@ -1,5 +1,6 @@
 from flask import request
 import config
+from app.db_models import logger
 
 HTTP_HEADER_CLOUDFLARE_IP_HEADER = 'CF-Connecting-IP'
 HTTP_HEADER_X_REAL_IP = 'X-Real-IP'
@@ -19,6 +20,7 @@ def get_client_ip():
         try:
             return request.headers.get(HTTP_HEADER_X_FORWARDED_FOR).split(",")[-1].strip()
         except:
+            logger.warning(f'{HTTP_HEADER_X_REAL_IP}: {request.headers.get(HTTP_HEADER_X_FORWARDED_FOR)} failed split')
             pass
 
     # security: If none of the above headers are present and trusted, then the connecting IP is used.
