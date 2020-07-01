@@ -8,6 +8,7 @@ import app.utils.db_utils_advanced as db_utils_advanced
 from config import SlackConfig
 from loguru import logger
 
+# todo: consider replacing with https://github.com/liiight/notifiers
 
 def send_message(msg, api_token=None, channel='#notificationstest'):
     try:

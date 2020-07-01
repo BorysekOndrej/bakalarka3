@@ -1,6 +1,8 @@
 import smtplib, ssl
 from config import MailConfig
 
+# todo: consider replacing with https://github.com/liiight/notifiers
+
 
 # based on https://realpython.com/python-send-email/
 def send_mail(recipient, subject, body):

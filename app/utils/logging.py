@@ -12,6 +12,9 @@ logger.info('New instance of app.')
 
 logging.getLogger('flask_cors').level = LogConfig.cors_level
 
+# todo: consider sending critical alert with https://github.com/liiight/notifiers to slack.
+#  logoru has integration for it
+
 # from loguru documentation
 
 class InterceptHandler(logging.Handler):
