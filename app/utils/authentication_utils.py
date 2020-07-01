@@ -1,3 +1,5 @@
+from typing import Optional
+
 import flask_jwt_extended
 from werkzeug.security import generate_password_hash, check_password_hash
 # werkzeug.security provides salting internally, which is amazing
@@ -21,8 +23,17 @@ def check_if_token_in_blacklist(decrypted_token):
     return False  # todo: token is not blacklisted
 
 
-def get_user_id_from_jwt(jwt):
+def get_user_id_from_jwt(jwt) -> int:
     return jwt["id"]
+
+
+def get_user_id_from_current_jwt() -> Optional[int]:
+    try:
+        user_jwt = flask_jwt_extended.get_jwt_identity()
+        user_id = get_user_id_from_jwt(user_jwt)
+        return user_id
+    except:
+        return None
 
 
 # based on explanation at https://stackoverflow.com/a/10724898/

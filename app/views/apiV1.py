@@ -49,8 +49,7 @@ def get_target_id(target_def=None):
     target = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.TargetSchema, data, get_only=True)
     if not target:
         return "fail", 400
-    user_jwt = flask_jwt_extended.get_jwt_identity()
-    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     # validate that the user entered the target definition at least once. Protection against enumaration attack.
     if not actions.can_user_get_target_definition_by_id(target.id, user_id):
@@ -61,8 +60,7 @@ def get_target_id(target_def=None):
 @bp.route('/get_target_from_id/<int:target_id>', methods=['GET'])
 @flask_jwt_extended.jwt_required
 def api_get_target_from_id(target_id):
-    user_jwt = flask_jwt_extended.get_jwt_identity()
-    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     target = actions.get_target_from_id_if_user_can_see(target_id, user_id)
     if target is None:
@@ -73,8 +71,7 @@ def api_get_target_from_id(target_id):
 @bp.route('/target/<int:target_id>', methods=['GET', 'DELETE'])
 @flask_jwt_extended.jwt_required
 def api_target_by_id(target_id: int):
-    user_jwt = flask_jwt_extended.get_jwt_identity()
-    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     target = actions.get_target_from_id_if_user_can_see(target_id, user_id)
     if target is None:
@@ -107,8 +104,7 @@ def api_target_by_id(target_id: int):
 @bp.route('/target', methods=['PUT', 'PATCH'])
 @flask_jwt_extended.jwt_required
 def api_target():
-    user_jwt = flask_jwt_extended.get_jwt_identity()
-    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     data = json.loads(request.data)
     data["target"]["protocol"] = data.get("protocol", "HTTPS").replace("TlsWrappedProtocolEnum.",
@@ -162,8 +158,7 @@ def api_add_scan_order():
 @bp.route('/enable_target_scan/<int:target_id>', methods=['GET'])
 @flask_jwt_extended.jwt_required
 def api_enable_target_scan(target_id: int):
-    user_jwt = flask_jwt_extended.get_jwt_identity()
-    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     target = actions.get_target_from_id_if_user_can_see(target_id, user_id)
     if target is None:
@@ -293,8 +288,7 @@ def logout():
 @bp.route('/get_user_targets')
 @flask_jwt_extended.jwt_required
 def api_get_user_targets():
-    jwt = flask_jwt_extended.get_jwt_identity()
-    # logger.debug(jwt)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     res = db_models.db.session \
         .query(db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults,
@@ -304,7 +298,7 @@ def api_get_user_targets():
                    db_models.ScanResultsSimplified.scanresult_id == db_models.ScanResults.id) \
         .filter(db_models.LastScan.target_id == db_models.Target.id) \
         .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
-        .filter(db_models.ScanOrder.user_id == jwt["id"]) \
+        .filter(db_models.ScanOrder.user_id == user_id) \
         .all()
 
     # res: List[Tuple[db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults]]
@@ -419,8 +413,7 @@ def api_sslyze_import_scan_results(sensor_key=None):
 @bp.route('/get_result_for_target/<int:target_id>', methods=['GET'])
 @flask_jwt_extended.jwt_required
 def api_get_result_for_target(target_id):
-    user_jwt = flask_jwt_extended.get_jwt_identity()
-    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     last_scan, scan_result = actions.get_last_scan_and_result(target_id, user_id)
     last_scan: db_models.LastScan
@@ -440,8 +433,7 @@ def api_get_result_for_target(target_id):
 @bp.route('/get_basic_cert_info_for_target/<int:target_id>', methods=['GET'])
 @flask_jwt_extended.jwt_required
 def api_get_basic_cert_info_for_target(target_id):
-    user_jwt = flask_jwt_extended.get_jwt_identity()
-    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     last_scan, scan_result = actions.get_last_scan_and_result(target_id, user_id)
     last_scan: db_models.LastScan
@@ -472,8 +464,7 @@ def api_get_basic_cert_info_for_target(target_id):
 @flask_jwt_extended.jwt_required
 def api_notification_settings(user_id=None, target_id=None):
     if user_id is None:
-        user_jwt = flask_jwt_extended.get_jwt_identity()
-        user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+        user_id = authentication_utils.get_user_id_from_current_jwt()
 
     if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
         return "Target either doesn't exist or user is not allowed to see it.", 401
@@ -503,8 +494,7 @@ def api_notification_settings(user_id=None, target_id=None):
 @flask_jwt_extended.jwt_required
 def api_scan_result_history(user_id=None, x_days=30):
     if user_id is None:
-        user_jwt = flask_jwt_extended.get_jwt_identity()
-        user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+        user_id = authentication_utils.get_user_id_from_current_jwt()
 
     res = actions.get_scan_history(user_id, x_days)
 

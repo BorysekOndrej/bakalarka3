@@ -370,8 +370,7 @@ def slack_oauth_callback():
 @bp.route('/slack_connections/<string:team_id>/<string:channel_id>', methods=['DELETE'])
 @flask_jwt_extended.jwt_required
 def api_slack_connection_delete(team_id: str = None, channel_id: str = None):
-    user_jwt = flask_jwt_extended.get_jwt_identity()
-    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     slack_connection: db_models.SlackConnections = db_utils_advanced.generic_get_create_edit_from_data(
         db_schemas.SlackConnectionsSchema,
@@ -389,8 +388,7 @@ def api_slack_connection_delete(team_id: str = None, channel_id: str = None):
 @bp.route('/slack_connections', methods=['GET'])
 @flask_jwt_extended.jwt_required
 def api_slack_connections_get():
-    user_jwt = flask_jwt_extended.get_jwt_identity()
-    user_id = authentication_utils.get_user_id_from_jwt(user_jwt)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     slack_connections = db_models.db.session\
         .query(db_models.SlackConnections)\
