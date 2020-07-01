@@ -841,3 +841,27 @@ class TmpRandomCodes(Base, UniqueModel):
 
     code = db.Column(db.String, unique=True, index=True)
     activity = db.Column(db.String)
+
+    params = db.Column(db.String)
+
+
+class MailConnections(Base, UniqueModel):
+    __tablename__ = 'mailconnections'
+    __uniqueColumns__ = ['user_id', 'email']
+    __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    user = db.relationship("User")
+
+    email = db.Column(db.String)
+    validated = db.Column(db.Boolean, default=False)
+
+    def __str__(self):
+        return f"{self.email}, {self.validated}"
+
+    def as_dict(self):
+        return {'email': self.email,
+                'validated': self.validated,
+                }

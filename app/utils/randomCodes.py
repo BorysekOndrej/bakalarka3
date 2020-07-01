@@ -16,12 +16,13 @@ def gen_random_code(n=16):
     return ''.join(random.choice(string.ascii_letters) for i in range(n))
 
 
-def create_and_save_random_code(activity: ActivityType, user_id: int, expire_in_n_minutes: int) -> str:
+def create_and_save_random_code(activity: ActivityType, user_id: int, expire_in_n_minutes: int, params: str) -> str:
     res = db_models.TmpRandomCodes()
     res.user_id = user_id
     res.activity = activity.name
     res.expires = db_models.datetime_to_timestamp(datetime.datetime.now() + datetime.timedelta(minutes=expire_in_n_minutes))
     res.code = gen_random_code()
+    res.params = params
     db_models.db.session.add(res)
     db_models.db.session.commit()
     return res.code

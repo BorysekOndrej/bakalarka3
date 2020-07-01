@@ -323,3 +323,12 @@ class SlackConnectionsSchema(SQLAlchemyAutoSchema):
         include_fk = True  # this needs to be enabled for schema.load to work properly
 
     user = Nested(UserSchema)
+
+
+class MailConnectionsSchema(SQLAlchemyAutoSchema):
+    class Meta(BaseSchema.Meta):
+        model = app.db_models.MailConnections
+        include_relationships = False
+        include_fk = True  # this needs to be enabled for schema.load to work properly
+
+    user = Nested(UserSchema)

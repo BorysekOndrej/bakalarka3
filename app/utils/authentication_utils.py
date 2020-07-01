@@ -37,9 +37,9 @@ def get_user_id_from_current_jwt() -> Optional[int]:
 
 
 # based on explanation at https://stackoverflow.com/a/10724898/
-def jwt_refresh_token_if_check_enabled():
+def jwt_refresh_token_if_check_enabled(condition):
     def decorator(func):
-        if config.SlackConfig.check_refresh_cookie_on_callback_endpoint:
+        if condition:
             return flask_jwt_extended.jwt_refresh_token_required(func)
         return func
     return decorator

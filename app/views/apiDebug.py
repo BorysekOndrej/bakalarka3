@@ -1,11 +1,12 @@
 import datetime
 import json
 import random
+from typing import List, Optional
 
 from flask import Blueprint, redirect, request
 
 import app.utils.randomCodes as randomCodes
-from config import FlaskConfig, SlackConfig
+from config import FlaskConfig, SlackConfig, MailConfig
 from app.utils.http_request_util import get_client_ip, limiter
 
 bp = Blueprint('apiDebug', __name__)
@@ -305,11 +306,10 @@ def slack_pre_install():
 @bp.route("/slack/begin_auth", methods=["GET"])
 @flask_jwt_extended.jwt_required
 def slack_url_to_oauth():
-    current_user = flask_jwt_extended.get_jwt_identity()
-    current_user_id = current_user['id']
+    user_id = authentication_utils.get_user_id_from_current_jwt()
 
     db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.SLACK,
-                                                      user_id=current_user_id,
+                                                      user_id=user_id,
                                                       expire_in_n_minutes=10)
     url = f'{SlackConfig.slack_endpoint_url}&state={db_code}'
     return url, 200
@@ -329,7 +329,7 @@ def slack_test():
 
 
 @bp.route("/slack/auth_callback", methods=["GET", "POST"])
-@authentication_utils.jwt_refresh_token_if_check_enabled()
+@authentication_utils.jwt_refresh_token_if_check_enabled(SlackConfig.check_refresh_cookie_on_callback_endpoint)
 def slack_oauth_callback():
     # security: It's not possible to get here Access token. (This requests comes from users browser after redirect from
     #  Slack. Refresh token should be in cookies, but that might make problems with API calls. It's dificult to say what
@@ -360,6 +360,87 @@ def slack_oauth_callback():
     if ok:
         return 'OK. Window will close in 2 seconds. <script>setTimeout(function(){ close() }, 2000);</script>', 200
     return 'fail', 500
+
+
+@bp.route("/mail/delete", methods=["DELETE"])
+@bp.route("/mail/add", methods=["POST"])
+@flask_jwt_extended.jwt_required
+def mail_add_or_delete():
+    # this can add multiple emails at once
+    user_id = authentication_utils.get_user_id_from_current_jwt()
+    emails = set(map(str.strip, request.json.get('emails', "")))
+
+    max_n_emails = 100
+    if len(emails) > max_n_emails:
+        return f"Possible abuse, can add at most {max_n_emails} emails at once. Aborting request."
+
+    existing_mail_connections: Optional[List[db_models.MailConnections]] = db_models.db.session\
+        .query(db_models.MailConnections)\
+        .filter(db_models.MailConnections.user_id == user_id) \
+        .filter(db_models.MailConnections.email.in_(list(emails)))\
+        .all()
+
+    if request.method == "DELETE":
+        if existing_mail_connections:
+            for existing_mail in existing_mail_connections:
+                db_models.db.session.delete(existing_mail)
+            db_models.db.session.commit()
+        return f"removed {len(existing_mail_connections)} emails", 200
+
+    if existing_mail_connections:
+        for existing_mail in existing_mail_connections:
+            emails.remove(existing_mail.email)
+
+    for single_email in emails:
+        # todo: remove emails that are not valid emails
+        pass
+
+    for single_email in emails:
+        new_mail = db_models.MailConnections()
+        new_mail.user_id = user_id
+        new_mail.email = single_email
+        db_models.db.session.add(new_mail)
+    db_models.db.session.commit()
+
+    tmp_codes = []  # security: todo: remove this
+
+    for single_email in emails:
+        db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.MAIL_VALIDATION,
+                                                          user_id=user_id,
+                                                          expire_in_n_minutes=30,
+                                                          params=single_email
+                                                          )
+        # todo: send email to that email address with db_code. Possibly use queue?
+        tmp_codes.append(db_code)  # security: todo: remove this
+
+    return str(tmp_codes), 200  # security: todo: remove this
+
+
+@bp.route("/mail/validate/<string:db_code>", methods=["GET"])
+@authentication_utils.jwt_refresh_token_if_check_enabled(MailConfig.check_refresh_cookie_on_validating_email)
+def mail_validate(db_code):
+    # security: using the same trick as above, i.e. requiring valid refresh cookie. todo: maybe reconsider?
+    user_id = authentication_utils.get_user_id_from_current_jwt()
+
+    db_code_valid, res_or_error_msg = randomCodes.validate_code(db_code, randomCodes.ActivityType.MAIL_VALIDATION, user_id)
+
+    if not db_code_valid:
+        return res_or_error_msg, 400
+    res: db_models.TmpRandomCodes = res_or_error_msg
+    user_id_from_code = res.user_id
+    validated_email = res.params
+
+    mail_connection: db_models.MailConnections = db_utils_advanced.generic_get_create_edit_from_data(
+        db_schemas.MailConnectionsSchema,
+        {"email": validated_email, "user_id": user_id_from_code},
+        get_only=True
+    )
+    if mail_connection is None:
+        return "fail", 500
+    mail_connection.validated = True
+    db_models.db.session.delete(res)
+    db_models.db.session.commit()
+    return 'ok', 200
 
 
 # security: This might leave private information in access log. Consider better option.

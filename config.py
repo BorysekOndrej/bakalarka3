@@ -114,3 +114,5 @@ class MailConfig(object):
     username = "lorem"
     password = "ipsum"
     sender_email = "test1@example.com"
+
+    check_refresh_cookie_on_validating_email = False  # might cause problems with APIs
