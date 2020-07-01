@@ -342,15 +342,14 @@ def slack_oauth_callback():
     #  Current behaviour: The slack_redirect_to_oauth and slack_oauth_callback need to be initiated by the same user.
     #                     The slack_oauth_callback expects refresh token in cookie, can be disabled in config.
 
-    current_user_id = None
+    user_id = None
     if SlackConfig.check_refresh_cookie_on_callback_endpoint:
-        current_user = flask_jwt_extended.get_jwt_identity()
-        current_user_id = current_user['id']
+        user_id = authentication_utils.get_user_id_from_current_jwt()
 
     auth_code = request.args['code']
     db_code = request.args['state']
 
-    db_code_valid, res_or_error_msg = randomCodes.validate_code(db_code, randomCodes.ActivityType.SLACK, current_user_id)
+    db_code_valid, res_or_error_msg = randomCodes.validate_code(db_code, randomCodes.ActivityType.SLACK, user_id)
 
     if not db_code_valid:
         return res_or_error_msg, 400
@@ -361,7 +360,6 @@ def slack_oauth_callback():
     if ok:
         return 'OK. Window will close in 2 seconds. <script>setTimeout(function(){ close() }, 2000);</script>', 200
     return 'fail', 500
-
 
 
 # security: This might leave private information in access log. Consider better option.
