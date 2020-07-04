@@ -172,6 +172,9 @@ def api_target():
             actions.filter_ids_of_notification_settings_user_can_see(
                 user_id, single_channel, settings_current_channel.force_disabled_ids)
 
+        if jsons.dumps(settings_current_channel) == jsons.dumps(actions.NotificationChannelOverride()):
+            del new_notification_settings[single_channel]
+
     new_notification_settings_json_str = jsons.dumps(new_notification_settings)
 
     if len(new_notification_settings):
