@@ -25,7 +25,8 @@ class LogConfig(object):
 class FlaskConfig(object):
     DEBUG = os.environ.get('DEBUG') or True
     # SQLALCHEMY_DATABASE_URI = 'sqlite:////' + os.path.join(basedir, 'test.db') # todo: permission problem
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + '../db/test.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + '../db/test.db' + "?check_same_thread = False" if DEBUG else ""
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'DEV-KEY-ONE'
