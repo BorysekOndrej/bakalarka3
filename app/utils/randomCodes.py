@@ -19,7 +19,7 @@ def gen_random_code(n=16):
 def create_and_save_random_code(activity: ActivityType, user_id: int, expire_in_n_minutes: int, params: str = None) -> str:
     if params is None:
         params = ""
-    
+
     res = db_models.TmpRandomCodes()
     res.user_id = user_id
     res.activity = activity.name
