@@ -85,24 +85,7 @@ def api_target_by_id(target_id: int):
     return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
 
 
-def normalize_list_of_ids(ids: List, exclude_ids=None):
-    if exclude_ids is None:
-        exclude_ids = []
-    return sorted(set(ids).difference(set(exclude_ids)))
-
-
-class NotificationChannelOverride(object):
-    def __init__(self):
-        self.force_disable: bool = False  # Force disable allows to disable notifications, but keep settings.
-        self.force_enabled_ids: list = []  # Force enabled can't override force_disabled
-        self.force_disabled_ids: list = []
-
-    def normalize_attrs(self):
-        self.force_disabled_ids = normalize_list_of_ids(self.force_disabled_ids)
-        self.force_enabled_ids = normalize_list_of_ids(self.force_enabled_ids, exclude_ids=self.force_disabled_ids)
-
-
-def merge_notification_channel_overrides(a: NotificationChannelOverride, b: NotificationChannelOverride):
+def merge_notification_channel_overrides(a: actions.NotificationChannelOverride, b: actions.NotificationChannelOverride):
     new = copy.deepcopy(a)
     if b.force_disable:
         new.force_disable = b.force_disable
@@ -175,10 +158,19 @@ def api_target():
             if notifications.get(single_channel) is None:
                 continue
             new_notification_settings[single_channel] = jsons.load(notifications.get(single_channel),
-                                                                   NotificationChannelOverride)
+                                                                   actions.NotificationChannelOverride)
 
             if single_channel == "email":
                 additional_channel_email_actions(new_notification_settings[single_channel], user_id)
+
+    for single_channel in NOTIFICATION_CHANNELS:
+        settings_current_channel = new_notification_settings[single_channel]
+        settings_current_channel.force_enabled_ids = \
+            actions.filter_ids_of_notification_settings_user_can_see(
+                user_id, single_channel, settings_current_channel.force_enabled_ids)
+        settings_current_channel.force_disabled_ids = \
+            actions.filter_ids_of_notification_settings_user_can_see(
+                user_id, single_channel, settings_current_channel.force_disabled_ids)
 
     new_notification_settings_json_str = jsons.dumps(new_notification_settings)
 
@@ -197,7 +189,7 @@ def api_target():
 
 @bp.route('/test_jsons', methods=['POST'])
 def test_jsons():
-    data = jsons.loads(request.data, NotificationChannelOverride)
+    data = jsons.loads(request.data, actions.NotificationChannelOverride)
     return jsons.dumps(data), 200
 
 

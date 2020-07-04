@@ -16,14 +16,53 @@ import app.utils.sslyze_parse_result as sslyze_parse_result
 from config import FlaskConfig, SslyzeConfig
 import app.utils.sslyze_result_simplify as sslyze_result_simplify
 
+CONNECTION_DB_MODELS_TYPES = {
+    'slack': db_models.SlackConnections,
+    'email': db_models.MailConnections
+}
+
+
+def normalize_list_of_ids(ids: List, exclude_ids=None):
+    if exclude_ids is None:
+        exclude_ids = []
+    return sorted(set(ids).difference(set(exclude_ids)))
+
+
+class NotificationChannelOverride(object):
+    def __init__(self):
+        self.force_disable: bool = False  # Force disable allows to disable notifications, but keep settings.
+        self.force_enabled_ids: list = []  # Force enabled can't override force_disabled
+        self.force_disabled_ids: list = []
+
+    def normalize_attrs(self):
+        self.force_disabled_ids = normalize_list_of_ids(self.force_disabled_ids)
+        self.force_enabled_ids = normalize_list_of_ids(self.force_enabled_ids, exclude_ids=self.force_disabled_ids)
+
+
+def get_target_definition_by_ids(target_ids: List[int], user_id: int) -> bool:
+    res = db_models.db.session.query(db_models.ScanOrder) \
+        .filter(db_models.ScanOrder.user_id == user_id)\
+        .filter(db_models.ScanOrder.target_id.in_(target_ids))\
+        .all()
+    return res
+
 
 def can_user_get_target_definition_by_id(target_id: int, user_id: int) -> bool:
-    scan_order = db_utils_advanced.generic_get_create_edit_from_data(
-        db_schemas.ScanOrderSchema,
-        {"target_id": target_id, "user_id": user_id},
-        get_only=True
-    )
-    return scan_order is not None
+    return get_target_definition_by_ids([target_id], user_id) is not None
+
+
+def filter_ids_of_notification_settings_user_can_see(user_id: int, connection_type: str, connection_ids: List[int])\
+        -> List[int]:
+    if len(connection_ids) == 0:
+        return []
+
+    res = db_models.db.session.query(CONNECTION_DB_MODELS_TYPES[connection_type]) \
+        .filter(CONNECTION_DB_MODELS_TYPES[connection_type].user_id == user_id) \
+        .filter(CONNECTION_DB_MODELS_TYPES[connection_type].id.in_(connection_ids)) \
+        .all()
+    if res is None:
+        return []
+    return sorted(set([x.id for x in res]))
 
 
 def full_target_settings_to_dict(target: db_models.Target, scan_order: db_models.ScanOrder,
@@ -161,14 +200,12 @@ def get_effective_notification_settings(user_id: int, target_id: int) -> Optiona
     # Todo: This is prime suspect for redis caching. Otherwise notification scheduler will be doing a coffin dance.
 
     # warning: to the keys of the following dict are tied up values in DB. Do not change.
-    db_model_types = {'slack': db_models.SlackConnections,
-                      'mail': db_models.MailConnections}
     connection_lists = {}
-    for connection_name in db_model_types:
-        connection_lists[connection_name] = list_connections_of_type(db_model_types[connection_name], user_id)
+    for connection_name in CONNECTION_DB_MODELS_TYPES:
+        connection_lists[connection_name] = list_connections_of_type(CONNECTION_DB_MODELS_TYPES[connection_name], user_id)
         for single_connection in connection_lists[connection_name]:
             single_connection['enabled'] = True
-            if connection_name == 'mail' and single_connection['validated'] == False:
+            if connection_name == 'email' and single_connection['validated'] == False:
                 single_connection['enabled'] = False
                 single_connection['notice'] = "Email connection can't be considered enabled until it's validated."
             single_connection['preferences'] = {}
