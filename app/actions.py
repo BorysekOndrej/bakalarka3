@@ -1,7 +1,7 @@
 import datetime
 import json
 from itertools import chain
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Union
 
 from sqlalchemy import or_
 
@@ -202,9 +202,10 @@ def mail_delete(user_id: int, emails: str) -> Tuple[str, int]:
     return mail_add_or_delete(user_id, emails, "DELETE")
 
 
-def mail_add_or_delete(user_id: int, emails: str, action: str) -> Tuple[str, int]:
+def mail_add_or_delete(user_id: int, emails: Union[str, List[str]], action: str) -> Tuple[str, int]:
     # this can add multiple emails at once
-    emails = set(map(str.strip, emails.split(";")))
+    if isinstance(emails, str):
+        emails = set(map(str.strip, emails.split(";")))
 
     max_n_emails = 100
     if len(emails) > max_n_emails:
@@ -247,6 +248,9 @@ def mail_add_or_delete(user_id: int, emails: str, action: str) -> Tuple[str, int
                                                           expire_in_n_minutes=30,
                                                           params=single_email
                                                           )
+        new_mail_connection = db_models.MailConnections()
+        new_mail_connection.email = single_email
+        new_mail_connection.user_id = user_id
         # todo: send email to that email address with db_code. Possibly use queue?
 
     return new_emails, 200

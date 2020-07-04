@@ -3,10 +3,10 @@ import datetime
 import random
 from loguru import logger
 
-import sqlalchemy
-from sqlalchemy import event
-from sqlalchemy.orm import class_mapper
+from flask_sqlalchemy import event
+from sqlalchemy.orm import class_mapper, ColumnProperty
 from sqlalchemy.types import TypeDecorator
+
 from typing import Optional
 
 import app
@@ -71,7 +71,7 @@ class UniqueModel(object):
     @classmethod
     def attribute_names(cls):
         return [prop.key for prop in class_mapper(cls).iterate_properties
-            if isinstance(prop, sqlalchemy.orm.ColumnProperty)]
+            if isinstance(prop, ColumnProperty)]
 
 
 @event.listens_for(Base, 'before_update', propagate=True)
@@ -854,7 +854,7 @@ class MailConnections(Base, UniqueModel):
 
 class ConnectionStatusOverrides(Base, UniqueModel):
     __tablename__ = 'connectionstatusoverrides'
-    __uniqueColumns__ = ['user_id', 'target_id', 'connection_id', 'connection_type']
+    __uniqueColumns__ = ['user_id', 'target_id']
     __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -865,16 +865,13 @@ class ConnectionStatusOverrides(Base, UniqueModel):
     target_id = db.Column(db.Integer, db.ForeignKey('targets.id'), nullable=True)
     target = db.relationship("Target")
 
-    connection_id = db.Column(db.Integer)
-    connection_type = db.Column(db.String)
-
     preferences = db.Column(db.JSON)
 
     # Example of preference JSON
     """
     {
-        "mail": {
-            "force_disable": False,
+        "email": {
+            "force_disable": false,
             "force_enabled_ids": [1, 2, 10], # Force enabled can't override force_disabled
             "force_disabled_ids": [4, 20, 30],
             "add_new_emails": ["test1@example.com", "test2@example.com"]
@@ -884,7 +881,7 @@ class ConnectionStatusOverrides(Base, UniqueModel):
                   
         },
         "slack": {
-            "force_disable": False,
+            "force_disable": false,
             "force_enabled_ids": [1, 2, 10], # Force enabled can't override force_disabled
             "force_disabled_ids": [4, 20, 30], 
         }

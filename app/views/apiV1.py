@@ -2,6 +2,7 @@ import copy
 import datetime
 import json
 import random
+import jsons
 from typing import List, Tuple
 
 from flask import Blueprint, current_app
@@ -86,11 +87,60 @@ def api_target_by_id(target_id: int):
     return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
 
 
+def normalize_list_of_ids(ids: List, exclude_ids=None):
+    if exclude_ids is None:
+        exclude_ids = []
+    return sorted(set(ids).difference(set(exclude_ids)))
+
+
+class NotificationChannelOverride(object):
+    def __init__(self):
+        self.force_disable: bool = False  # Force disable allows to disable notifications, but keep settings.
+        self.force_enabled_ids: list = []  # Force enabled can't override force_disabled
+        self.force_disabled_ids: list = []
+
+    def normalize_attrs(self):
+        self.force_disabled_ids = normalize_list_of_ids(self.force_disabled_ids)
+        self.force_enabled_ids = normalize_list_of_ids(self.force_enabled_ids, exclude_ids=self.force_disabled_ids)
+
+
+def merge_notification_channel_overrides(a: NotificationChannelOverride, b: NotificationChannelOverride):
+    new = copy.deepcopy(a)
+    if b.force_disable:
+        new.force_disable = b.force_disable
+    new.force_enabled_ids.extend(b.force_enabled_ids)
+    new.force_disabled_ids.extend(b.force_disabled_ids)
+    new.normalize_attrs()
+    return new
+
+
+def additional_channel_email_actions(email_pref: dict, user_id: int) -> bool:
+    ADD_NEW_EMAILS_FIELD = "add_new_emails"
+
+    emails_to_be_added = getattr(email_pref, ADD_NEW_EMAILS_FIELD, None)
+    if emails_to_be_added:
+        try:
+            new_mails_or_exception_msg, status_code = actions.mail_add(user_id, emails_to_be_added)
+            if status_code != 200:
+                raise Exception(new_mails_or_exception_msg)
+            delattr(email_pref, ADD_NEW_EMAILS_FIELD)
+
+            new_emails_ids_to_force_enable = [x.id for x in new_mails_or_exception_msg]
+            email_pref.force_enabled_ids.extend(new_emails_ids_to_force_enable)
+        except Exception as e:
+            logger.error(f"Error adding new emails for target: {e}")
+            return False
+
+    return True
+
+
 @bp.route('/add_targets', methods=['POST', 'PUT'])
 @bp.route('/add_target', methods=['POST', 'PUT'])
 @bp.route('/target', methods=['PUT', 'PATCH'])
 @flask_jwt_extended.jwt_required
 def api_target():
+    NOTIFICATION_CHANNELS = ["slack", "email"]
+
     user_id = authentication_utils.get_user_id_from_current_jwt()
 
     data = json.loads(request.data)
@@ -111,19 +161,45 @@ def api_target():
 
         target = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.TargetSchema, new_target_def)
 
-        if data.get("scanOrder", None):
+        target_ids.add(target.id)
+
+        if data.get("scanOrder"):
             scan_order_def = db_utils.merge_dict_with_copy_and_overwrite(data.get("scanOrder", {}),
                                                                          {"target_id": target.id, "user_id": user_id})
             db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema, scan_order_def)
 
-        if data.get("notifications", None):
-            # todo: fix this
-            pass
+    if data.get("notifications"):
+        new_notification_settings = {}
 
-        target_ids.add(target.id)
+        notifications = data.get("notifications")
+
+        for single_channel in NOTIFICATION_CHANNELS:
+            if notifications.get(single_channel) is None:
+                continue
+            new_notification_settings[single_channel] = jsons.load(notifications.get(single_channel), NotificationChannelOverride)
+
+            if single_channel == "email":
+                additional_channel_email_actions(new_notification_settings[single_channel], user_id)
+
+    new_notification_settings_json_str = jsons.dumps(new_notification_settings)
+
+    if len(new_notification_settings):
+        for target_id in target_ids:
+            notifications_override: db_models.ConnectionStatusOverrides =\
+                db_utils_advanced.generic_get_create_edit_from_data(
+                    db_schemas.ConnectionStatusOverridesSchema,
+                    {"target_id": target_id, "user_id": user_id})
+            notifications_override.preferences = new_notification_settings_json_str
+        db_models.db.session.commit()
 
     return f'Inserted {len(target_ids)} targets', 200
     # return api_target_by_id(target.id)  # todo: reenable this
+
+
+@bp.route('/test_jsons', methods=['POST'])
+def test_jsons():
+    data = jsons.loads(request.data, NotificationChannelOverride)
+    return jsons.dumps(data), 200
 
 
 @bp.route('/add_scan_order', methods=['POST'])
