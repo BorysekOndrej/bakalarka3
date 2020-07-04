@@ -202,9 +202,9 @@ def mail_delete(user_id: int, emails: str) -> Tuple[str, int]:
     return mail_add_or_delete(user_id, emails, "DELETE")
 
 
-def mail_add_or_delete(user_id, emails, action) -> Tuple[str, int]:
+def mail_add_or_delete(user_id: int, emails: str, action: str) -> Tuple[str, int]:
     # this can add multiple emails at once
-    emails = set(map(str.strip, emails))
+    emails = set(map(str.strip, emails.split(";")))
 
     max_n_emails = 100
     if len(emails) > max_n_emails:
@@ -231,14 +231,15 @@ def mail_add_or_delete(user_id, emails, action) -> Tuple[str, int]:
         # todo: remove emails that are not valid emails
         pass
 
+    new_emails = []
+
     for single_email in emails:
         new_mail = db_models.MailConnections()
         new_mail.user_id = user_id
         new_mail.email = single_email
+        new_emails.append(new_mail)
         db_models.db.session.add(new_mail)
     db_models.db.session.commit()
-
-    tmp_codes = []  # security: todo: remove this
 
     for single_email in emails:
         db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.MAIL_VALIDATION,
@@ -247,7 +248,6 @@ def mail_add_or_delete(user_id, emails, action) -> Tuple[str, int]:
                                                           params=single_email
                                                           )
         # todo: send email to that email address with db_code. Possibly use queue?
-        tmp_codes.append(db_code)  # security: todo: remove this
 
-    return str(tmp_codes), 200  # security: todo: remove this
+    return new_emails, 200
 
