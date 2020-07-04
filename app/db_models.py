@@ -67,11 +67,10 @@ class UniqueModel(object):
         res_resorted = sorted(res, key=lambda x: stringlist_as_tuple.index(x.id))
         return res_resorted  # original order is important in some cases
 
-
     @classmethod
     def attribute_names(cls):
         return [prop.key for prop in class_mapper(cls).iterate_properties
-            if isinstance(prop, ColumnProperty)]
+                if isinstance(prop, ColumnProperty)]
 
 
 @event.listens_for(Base, 'before_update', propagate=True)
@@ -198,7 +197,7 @@ class LastScan(Base, UniqueModel):  # this might not have to be in DB, it might 
         try:
             rand_time_offset = random.randrange(0, SchedulerConfig.max_first_scan_delay)
             enqueue_time = datetime.datetime.now() - datetime.timedelta(seconds=rand_time_offset)
-            #res = LastScan(id=target_id, last_enqueued=int(enqueue_time.timestamp()))
+            # res = LastScan(id=target_id, last_enqueued=int(enqueue_time.timestamp()))
             res = LastScan(target_id=target_id, last_enqueued=datetime_to_timestamp(enqueue_time))
             db.session.add(res)
             db.session.commit()
@@ -290,7 +289,7 @@ class CipherSuiteScanResult(Base, UniqueModel):
     __tablename__ = 'ciphersuitescanresults'
     __noUpdate__ = True
     __uniqueColumns__ = ['protocol', 'preferred_cipher_id', 'accepted_cipher_list', 'rejected_cipher_list',
-                            'errored_cipher_list']
+                         'errored_cipher_list']
     __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -438,10 +437,10 @@ class RejectedCipherHandshakeErrorMessage(Base, UniqueModel):
 class TLS12SessionResumptionSupport(Base, UniqueModel):
     __tablename__ = 'tls12_session_resumption_support'
     __noUpdate__ = True
-    __uniqueColumns__ = [   'attempted_resumptions_nb', 'successful_resumptions_nb',
-                          'errored_resumptions_list', 'failed_resumptions_nb',
-                          'is_ticket_resumption_supported', 'ticket_resumption_failed_reason',
-                          'ticket_resumption_error']
+    __uniqueColumns__ = ['attempted_resumptions_nb', 'successful_resumptions_nb',
+                         'errored_resumptions_list', 'failed_resumptions_nb',
+                         'is_ticket_resumption_supported', 'ticket_resumption_failed_reason',
+                         'ticket_resumption_error']
     __table_args__ = (db.UniqueConstraint(*__uniqueColumns__, name=f'_uq_{__tablename__}'),)
 
     id = db.Column(db.Integer, primary_key=True)
@@ -746,7 +745,8 @@ class ScanResultsSimplified(Base, UniqueModel):
 
     id = db.Column(db.Integer, primary_key=True)  # This id might not be the same as scanresult_id. # todo: fix
 
-    scanresult_id = db.Column(db.Integer, index=True)  # This is needed because Marshmallow in my conf throws away id param.
+    scanresult_id = db.Column(db.Integer,
+                              index=True)  # This is needed because Marshmallow in my conf throws away id param.
 
     notBefore = db.Column(NumericTimestamp)
     notAfter = db.Column(NumericTimestamp)

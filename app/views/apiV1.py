@@ -30,7 +30,6 @@ import app.db_schemas as db_schemas
 import app.db_models as db_models
 import app.utils.authentication_utils as authentication_utils
 import app.actions as actions
-# from config import FlaskConfig
 
 
 @bp.route('/get_next_targets_batch')
@@ -76,7 +75,6 @@ def api_target_by_id(target_id: int):
         scan_order.active = False
         db_models.db.session.commit()
         db_utils.actions_on_modification(scan_order)
-
 
     scan_order = db_utils_advanced.generic_get_create_edit_from_data(db_schemas.ScanOrderSchema,
                                                                      {"target_id": target.id, "user_id": user_id},
@@ -176,7 +174,8 @@ def api_target():
         for single_channel in NOTIFICATION_CHANNELS:
             if notifications.get(single_channel) is None:
                 continue
-            new_notification_settings[single_channel] = jsons.load(notifications.get(single_channel), NotificationChannelOverride)
+            new_notification_settings[single_channel] = jsons.load(notifications.get(single_channel),
+                                                                   NotificationChannelOverride)
 
             if single_channel == "email":
                 additional_channel_email_actions(new_notification_settings[single_channel], user_id)
@@ -185,7 +184,7 @@ def api_target():
 
     if len(new_notification_settings):
         for target_id in target_ids:
-            notifications_override: db_models.ConnectionStatusOverrides =\
+            notifications_override: db_models.ConnectionStatusOverrides = \
                 db_utils_advanced.generic_get_create_edit_from_data(
                     db_schemas.ConnectionStatusOverridesSchema,
                     {"target_id": target_id, "user_id": user_id})
@@ -307,7 +306,7 @@ def api_register():
 
     data["password_hash"] = authentication_utils.generate_password_hash(data["password"])
     data.pop("password")
-    data["main_api_key"] = "API-546654-"+str(random.randrange(10000))  # todo
+    data["main_api_key"] = "API-546654-" + str(random.randrange(10000))  # todo
     logger.warning(data)
 
     schema = db_schemas.UserSchema(session=db_models.db)
@@ -535,7 +534,6 @@ def api_notification_settings(user_id=None, target_id=None):
     return jsonify(connection_lists)
 
 
-
 @bp.route('/scan_result_history', methods=['GET'])
 @bp.route('/scan_result_history/<int:x_days>', methods=['GET'])
 @flask_jwt_extended.jwt_required
@@ -558,7 +556,8 @@ def api_scan_result_history(user_id=None, x_days=30):
         if x.ScanResultsHistory:
             new_dict["timestamp"] = x.ScanResultsHistory.timestamp
         new_dict["target"] = json.loads(db_schemas.TargetSchema().dumps(x.Target))
-        new_dict["result_simplified"] = json.loads(db_schemas.ScanResultsSimplifiedSchema().dumps(x.ScanResultsSimplified))
+        new_dict["result_simplified"] = json.loads(
+            db_schemas.ScanResultsSimplifiedSchema().dumps(x.ScanResultsSimplified))
         res_arr.append(new_dict)
 
     return json.dumps(res_arr, indent=3), 200
@@ -584,7 +583,8 @@ def api_change_password():
         return login_msg, login_status_code
 
     if new_password is None or len(new_password) == 0:
-        return jsonify({"msg": "Missing new password parameter."}), 400  # todo: consider concatenating with other error msgs
+        return jsonify(
+            {"msg": "Missing new password parameter."}), 400  # todo: consider concatenating with other error msgs
 
     # todo: consider password uniqueness validation
 

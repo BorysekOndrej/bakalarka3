@@ -96,12 +96,13 @@ def sslyze_send_scan_results(scan_dict: dict) -> bool:
     return True
 
 
-def get_last_scan_and_result(target_id: int, user_id: int) -> Optional[Tuple[db_models.LastScan, db_models.ScanResults]]:
+def get_last_scan_and_result(target_id: int, user_id: int) -> Optional[
+    Tuple[db_models.LastScan, db_models.ScanResults]]:
     if not can_user_get_target_definition_by_id(target_id, user_id):
         return None
 
-    scan_result = db_models.db.session\
-        .query(db_models.LastScan, db_models.ScanResults)\
+    scan_result = db_models.db.session \
+        .query(db_models.LastScan, db_models.ScanResults) \
         .filter(db_models.LastScan.target_id == target_id) \
         .filter(db_models.LastScan.result_id == db_models.ScanResults.id) \
         .one()
@@ -211,10 +212,10 @@ def mail_add_or_delete(user_id: int, emails: Union[str, List[str]], action: str)
     if len(emails) > max_n_emails:
         return f"Possible abuse, can add at most {max_n_emails} emails at once. Aborting request.", 400
 
-    existing_mail_connections: Optional[List[db_models.MailConnections]] = db_models.db.session\
-        .query(db_models.MailConnections)\
+    existing_mail_connections: Optional[List[db_models.MailConnections]] = db_models.db.session \
+        .query(db_models.MailConnections) \
         .filter(db_models.MailConnections.user_id == user_id) \
-        .filter(db_models.MailConnections.email.in_(list(emails)))\
+        .filter(db_models.MailConnections.email.in_(list(emails))) \
         .all()
 
     if action == "DELETE":
@@ -254,4 +255,3 @@ def mail_add_or_delete(user_id: int, emails: Union[str, List[str]], action: str)
         # todo: send email to that email address with db_code. Possibly use queue?
 
     return new_emails, 200
-
