@@ -868,5 +868,25 @@ class ConnectionStatusOverrides(Base, UniqueModel):
     connection_id = db.Column(db.Integer)
     connection_type = db.Column(db.String)
 
-    enabled = db.Column(db.Boolean)
     preferences = db.Column(db.JSON)
+
+    # Example of preference JSON
+    """
+    {
+        "mail": {
+            "force_disable": False,
+            "force_enabled_ids": [1, 2, 10], # Force enabled can't override force_disabled
+            "force_disabled_ids": [4, 20, 30],
+            "add_new_emails": ["test1@example.com", "test2@example.com"]
+                // This should only appear in new request, not in DB.
+                // If emails don't exist, they are created and IDs will be added to force_enabled_ids.
+                // If emails do exist, their IDs will be added to force_enabled_ids.
+                  
+        },
+        "slack": {
+            "force_disable": False,
+            "force_enabled_ids": [1, 2, 10], # Force enabled can't override force_disabled
+            "force_disabled_ids": [4, 20, 30], 
+        }
+    }
+    """
