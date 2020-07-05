@@ -307,6 +307,15 @@ def test_slack2():
     return f'{res.status}', 200 if res.ok else 400
 
 
+@bp.route('/test_mail', methods=['GET'])
+def test_mail1():
+    import os
+    mail_test_dst = os.environ['MAIL_TEST_DST']
+    import app.utils.notifications_send as notifications_send
+    res = notifications_send.email_send_msg(mail_test_dst, "test tlsinventory")
+    return f'{res.status}', 200 if res.ok else 400
+
+
 @bp.route("/slack/show_button", methods=["GET"])
 def slack_pre_install():
     # This function is adopted from Slack documentation.

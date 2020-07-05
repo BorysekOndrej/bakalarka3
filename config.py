@@ -109,11 +109,16 @@ class SlackConfig(object):
 
 
 class MailConfig(object):
-    enabled = False
-    hostname = "localhost"
-    port = 1025
-    username = "lorem"
-    password = "ipsum"
-    sender_email = "test1@example.com"
+    enabled = bool(os.environ.get('MAIL_ENABLED') or False)
+
+    use_gmail = bool(os.environ.get('MAIL_USE_GMAIL') or False)
+
+    username = os.environ.get('MAIL_USERNAME') or "lorem"
+    password = os.environ.get('MAIL_PASSWORD') or "ipsum"
+    sender_email = os.environ.get('MAIL_SENDER_EMAIL') or username
+
+    hostname = os.environ.get('MAIL_HOSTNAME') or "127.0.0.1"
+    port = int(os.environ.get('MAIL_PORT') or 25)
+    tls = bool(os.environ.get('MAIL_TLS_ENABLED') or False)
 
     check_refresh_cookie_on_validating_email = False  # might cause problems with APIs
