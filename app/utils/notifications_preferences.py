@@ -181,6 +181,21 @@ def mail_delete(user_id: int, emails: str) -> Tuple[str, int]:
     return mail_add_or_delete(user_id, emails, "DELETE")
 
 
+def send_mail_validation(user_id: int, single_email: str):
+    db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.MAIL_VALIDATION,
+                                                      user_id=user_id,
+                                                      expire_in_n_minutes=30,
+                                                      params=single_email
+                                                      )
+    validation_url = flask.url_for("apiDebug.mail_validate", db_code=db_code, _external=True)
+
+    notifications_send.email_send_msg(single_email,
+                                      validation_url,
+                                      "Please validate your email for TLSInventory")
+
+    return True
+
+
 def mail_add_or_delete(user_id: int, emails: Union[str, List[str]], action: str) -> Tuple[str, int]:
     # this can add multiple emails at once
     if isinstance(emails, str):
@@ -222,21 +237,7 @@ def mail_add_or_delete(user_id: int, emails: Union[str, List[str]], action: str)
     db_models.db.session.commit()
 
     for single_email in emails:
-        db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.MAIL_VALIDATION,
-                                                          user_id=user_id,
-                                                          expire_in_n_minutes=30,
-                                                          params=single_email
-                                                          )
-        new_mail_connection = db_models.MailConnections()
-        new_mail_connection.email = single_email
-        new_mail_connection.user_id = user_id
-
-        validation_url = flask.url_for("apiDebug.mail_validate", db_code=db_code, _external=True)
-
-        notifications_send.email_send_msg(single_email,
-                                          validation_url,
-                                          "Please validate your email for TLSInventory")
-        # todo: send email to that email address with db_code. Possibly use queue?
+        send_mail_validation(user_id, single_email)
 
     return new_emails, 200
 
