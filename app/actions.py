@@ -217,16 +217,7 @@ def merge_dict_by_strategy(more_general: dict, more_specific: dict) -> dict:
     return {**more_general, **more_specific}
 
 
-def get_effective_notification_settings(user_id: int, target_id: int) -> Optional[dict]:
-    # Todo: This is prime suspect for redis caching. Otherwise notification scheduler will be doing a coffin dance.
-
-    # warning: I'm editing live models, do NOT persis changes to DB.
-    connection_lists = {}
-    for single_channel_name in CONNECTION_DB_MODELS_TYPES:
-        connection_lists[single_channel_name] = list_connections_of_type(CONNECTION_DB_MODELS_TYPES[single_channel_name], user_id)
-        for single_connection in connection_lists[single_channel_name]:
-            single_connection['enabled'] = False
-
+def get_all_relevant_notification_overrides(user_id: int, target_id: int) -> List[db_models.ConnectionStatusOverrides]:
     query = db_models.db.session.query(db_models.ConnectionStatusOverrides) \
         .filter(db_models.ConnectionStatusOverrides.user_id == user_id)
 
@@ -236,8 +227,10 @@ def get_effective_notification_settings(user_id: int, target_id: int) -> Optiona
     else:
         query = query.filter(db_models.ConnectionStatusOverrides.target_id.is_(None))
     res = query.all()
-    res: List[db_models.ConnectionStatusOverrides]
+    return res
 
+
+def merge_notifications_overrides_to_one(res: List[db_models.ConnectionStatusOverrides]) -> db_models.ConnectionStatusOverrides:
     final_override_preferences = NotificationPreferences()
     for single_override in chain(filter(lambda x: x.target_id is None, res),
                                  filter(lambda x: x.target_id is not None, res)):
@@ -253,23 +246,45 @@ def get_effective_notification_settings(user_id: int, target_id: int) -> Optiona
             setattr(final_override_preferences, single_channel_name,
                     merge_notification_channel_overrides(getattr(final_override_preferences, single_channel_name),
                                                          getattr(override_preferences, single_channel_name)))
+    return final_override_preferences
 
+
+def get_effective_notification_settings(user_id: int, target_id: int) -> Optional[dict]:
+    # Todo: This is prime suspect for redis caching. Otherwise notification scheduler will be doing a coffin dance.
+
+    # warning: I'm editing live models, do NOT persis changes to DB.
+    connection_lists = {}
+    for single_channel_name in CONNECTION_DB_MODELS_TYPES:
+        connection_lists[single_channel_name] = list_connections_of_type(CONNECTION_DB_MODELS_TYPES[single_channel_name], user_id)
+        for single_connection in connection_lists[single_channel_name]:
+            single_connection['enabled'] = False
+
+    res = get_all_relevant_notification_overrides(user_id, target_id)
+    final_override_preferences = merge_notifications_overrides_to_one(res)
+
+    # Use final override preferences to enable or disable connection.
     for single_channel_name in CONNECTION_DB_MODELS_TYPES:
         for single_connection in connection_lists[single_channel_name]:
             single_connection: dict
-            override_for_single_channel: NotificationChannelOverride = getattr(final_override_preferences, single_channel_name)
-            if override_for_single_channel.force_disable:
-                single_connection["enabled"] = False
-                continue
-            if single_connection["id"] in override_for_single_channel.force_disabled_ids:
+            override_for_single_channel: NotificationChannelOverride = \
+                getattr(final_override_preferences, single_channel_name)
+
+            if override_for_single_channel.force_disable or \
+                    single_connection["id"] in override_for_single_channel.force_disabled_ids:
                 single_connection["enabled"] = False
                 continue
             if single_connection["id"] in override_for_single_channel.force_enabled_ids:
                 single_connection["enabled"] = True
 
+    # If connection is enabled, then it's also presumed active. Can be disabled by validations afterwards.
+    for single_channel_name in CONNECTION_DB_MODELS_TYPES:
+        for single_connection in connection_lists[single_channel_name]:
+            single_connection["active"] = single_connection["enabled"]
+
+    # Additional actions to set not completed connections inactive.
     for single_connection in connection_lists['email']:
         if single_connection['validated'] is False:
-            single_connection['enabled'] = False
+            single_connection['active'] = False
             single_connection['notice'] = "Email connection can't be considered enabled until it's validated."
 
     return connection_lists
