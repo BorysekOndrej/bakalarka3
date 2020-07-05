@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Set, Tuple, Dict
 
 import app.utils.notifications_send as notifications_send
 import app.db_models as db_models
@@ -44,14 +44,26 @@ class SlackNotification(Notification):
 
 
 class NotificationTypeExpiration(object):
-    def __init__(self):
-        pass
+    def __init__(self, single_res, notification_preferences):
+        self.single_res = single_res
+        self.notification_preferences = notification_preferences
+
+        self.scan_order = single_res.ScanOrder
+        self.certificate_chain = single_res.LastScan.result.certificate_information.received_certificate_chain_list
+        self.days_remaining = (self.certificate_chain.not_after() - datetime.datetime.now()).days
+        self.event_type = EventType.ClosingExpiration if self.days_remaining >= 0 else EventType.AlreadyExpired
 
     @staticmethod
-    def check_condition_and_create_notifications(main_data) -> List[Notification]:
-        main_data: Tuple[db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults]
+    def check_condition_and_create_notifications(main_data, notification_preferences_by_scan_order_id: Dict[int, dict])\
+            -> List[Notification]:
+        scan_order_ids_expired, scan_order_ids_nearing_expiration = NotificationTypeExpiration.check_condition(main_data, notification_preferences_by_scan_order_id)
+        notifications_to_send = NotificationTypeExpiration.create_notifications(main_data, notification_preferences_by_scan_order_id, scan_order_ids_expired, scan_order_ids_nearing_expiration)
+        return notifications_to_send
+
+    @staticmethod
+    def check_condition(main_data, notification_preferences_by_scan_order_id: Dict[int, dict])\
+            -> Tuple[Set, Set]:
         expiration_by_target_id = {}
-        notification_settings_by_scan_order_id = make_dict_notification_settings_by_scan_order_id(main_data)
 
         for single_res in main_data:
             key = single_res.Target.id
@@ -66,7 +78,7 @@ class NotificationTypeExpiration(object):
             target_id = single_res.ScanOrder.target_id
 
             expires = expiration_by_target_id[target_id]
-            notification_settings = notification_settings_by_scan_order_id[scan_order_id]
+            notification_settings = notification_preferences_by_scan_order_id[scan_order_id]
 
             # todo: make filtering based on notification settings. Currently notifying about 1 day expire only
             if expires < datetime.datetime.now():
@@ -89,37 +101,65 @@ class NotificationTypeExpiration(object):
         logger.info(f"scan_order_ids_expired orders ids: {scan_order_ids_expired}")
         logger.info(f"scan_order_ids_nearing_expiration ids: {scan_order_ids_nearing_expiration}")
 
+        return scan_order_ids_expired, scan_order_ids_nearing_expiration
+
+    @staticmethod
+    def create_notifications(main_data, notification_preferences_by_scan_order_id: Dict[int, dict],
+                             scan_order_ids_expired: Set, scan_order_ids_nearing_expiration: Set) -> List[Notification]:
         notifications_to_send = []
 
         for single_res in main_data:
             scan_order_id = single_res.ScanOrder.id
 
-            event_type = None
-            if single_res.ScanOrder.id in scan_order_ids_expired:
-                event_type = EventType.AlreadyExpired
-            elif single_res.ScanOrder.id in scan_order_ids_nearing_expiration:
-                event_type = EventType.ClosingExpiration
-
-            if event_type is None:
+            if single_res.ScanOrder.id not in scan_order_ids_expired and \
+                    single_res.ScanOrder.id not in scan_order_ids_nearing_expiration:
                 continue
 
-            final_pref = notification_settings_by_scan_order_id[scan_order_id]
-            notifications_to_send.extend(craft_notification_for_single_event(event_type, single_res, final_pref))
+            final_pref = notification_preferences_by_scan_order_id[scan_order_id]
+            new_rec = NotificationTypeExpiration(single_res, final_pref)
+
+            notifications_to_send.extend(new_rec.craft_mails())
+            notifications_to_send.extend(new_rec.craft_slacks())
 
         return notifications_to_send
 
-    def craft_plain_text(self):
-        return "test"
+    def event_id_generator(self):
+        return f'{self.scan_order.id};{self.event_type};{self.certificate_chain.id};{self.days_remaining}'
 
-    def craft_mail(self):
-        res = MailNotification()
-        res.text = self.cract_plain_text()
-        return res
+    def craft_mails(self) -> List[MailNotification]:
+        email_preferences = self.notification_preferences.get("email")
+        notifications_to_send = []
+        for single_mail_connection in email_preferences:
 
-    def craft_slack(self):
+            scan_order: db_models.ScanOrder = self.single_res.ScanOrder
+
+            target = scan_order.target
+            days_remaining = self.days_remaining
+
+            res = MailNotification()
+            res.event_id = self.event_id_generator()
+            res.recipient_email = single_mail_connection["email"]
+
+            if self.event_type.ClosingExpiration:
+                res.subject = f"Certificate expiration notification ({target}) - {days_remaining} days remaining"
+            else:
+                res.subject = f"Certificate expiration notification ({target}) - Expired days {days_remaining} ago"
+
+            # todo: use flask templating
+            res.text = res.subject  # todo
+            notifications_to_send.append(res)
+
+        return notifications_to_send
+
+    def cract_plain_text(self):
+        # fallback when more specific function for channel is not available
+        # todo: actual plaintext
+        return self.event_id_generator()
+
+    def craft_slacks(self) -> List[SlackNotification]:
         res = SlackNotification()
         res.text = self.cract_plain_text()
-        return res
+        return [res]
 
 
 
@@ -173,13 +213,16 @@ def get_scan_data_for_notifications_scheduler(limit_to_following_target_ids: Opt
 def schedule_notifications(limit_to_following_target_ids: Optional[List[int]] = None):
     # Param limit_to_following_targets is used when we want to imediately send notifications on completed scan.
 
-    main_data = get_scan_data_for_notifications_scheduler(limit_to_following_target_ids)
-    # ScanOrder, Target, LastScan, ScanResults
+    main_data: Tuple[db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults]\
+        = get_scan_data_for_notifications_scheduler(limit_to_following_target_ids)
+    notification_preferences_by_scan_order_id: Dict[str, dict] = make_dict_notification_settings_by_scan_order_id(main_data)
     # users_with_active_scan_orders = set([res.ScanOrder.user_id for res in main_data])
 
     all_new_notifications = []
 
-    all_new_notifications.extend(expiring_notifications(main_data))
+    all_new_notifications.extend(
+        NotificationTypeExpiration.check_condition_and_create_notifications(main_data,
+                                                                            notification_preferences_by_scan_order_id))
 
     return send_notifications(all_new_notifications)
 
@@ -195,10 +238,6 @@ def make_dict_notification_settings_by_scan_order_id(main_data):
         notification_settings_by_scan_order_id[scan_order_id] = get_effective_active_notification_settings(user_id, target_id)
 
     return notification_settings_by_scan_order_id
-
-
-def expiring_notifications(main_data) -> List[Notification]:
-    return NotificationTypeExpiration.check_condition_and_create_notifications(main_data)
 
 
 def craft_notification_for_single_event(event_type: EventType, res, pref: dict):
@@ -243,38 +282,11 @@ def craft_slack_notification_for_single_event(event_type: EventType, res, pref: 
     return resulting_notifications  # todo
 
 
-def expiration_event_id_generator(scan_order, event_type, certificate_chain, days_remaining):
-    return f'{scan_order.id};{event_type};{certificate_chain.id};{days_remaining}'
-
-
 def craft_expiration_email(recipient_email, res, notification_pref: dict):
     if not extract_emails_active(notification_pref):
         logger.warning("craft_expiration_email reached even when emails_active is not active")
         return None
 
-    scan_order: db_models.ScanOrder = res.ScanOrder
-
-    # user = scan_order.user
-    target = scan_order.target
-    last_scan = res.LastScan
-    certificate_chain = last_scan.result.certificate_information.received_certificate_chain_list
-    not_after = certificate_chain.not_after()
-    days_remaining = (not_after - datetime.datetime.now()).days
-
-    event_type = EventType.ClosingExpiration if days_remaining >= 0 else EventType.AlreadyExpired
-
-    res = MailNotification()
-    res.id = expiration_event_id_generator(scan_order, event_type, certificate_chain, days_remaining)
-    res.recipient_email = recipient_email
-
-    if event_type.ClosingExpiration:
-        res.subject = f"Certificate expiration notification ({target}) - {days_remaining} days remaining"
-    else:
-        res.subject = f"Certificate expiration notification ({target}) - Expired days {days_remaining} ago"
-
-    # todo: use flask templating
-    res.text = res.subject  # todo
-    return res
 
 
 def send_notifications(planned_notifications: Optional[List[Notification]] = None):
@@ -287,7 +299,7 @@ def send_notifications(planned_notifications: Optional[List[Notification]] = Non
                 "sent_notification_id": x.event_id,
                 "channel": x.channel.value
             }
-            res = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict, get_only=True)
+            res, existing = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict, get_only=True)
             if res is None:
                 notifications_send.email_send_msg(x.recipient_email, x.text, x.subject)
                 res = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict)
