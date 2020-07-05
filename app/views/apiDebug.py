@@ -304,7 +304,7 @@ def test_slack2():
     slack_webhook = os.environ['SLACK_WEBHOOK']
     import app.utils.notifications_send as notifications_send
     res = notifications_send.slack_send_msg_via_webhook(slack_webhook, "test2")
-    return f'{res}', 200
+    return f'{res.status}', 200 if res.ok else 400
 
 
 @bp.route("/slack/show_button", methods=["GET"])
