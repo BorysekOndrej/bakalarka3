@@ -217,7 +217,7 @@ def merge_dict_by_strategy(more_general: dict, more_specific: dict) -> dict:
     return {**more_general, **more_specific}
 
 
-def get_all_relevant_notification_overrides(user_id: int, target_id: int) -> List[db_models.ConnectionStatusOverrides]:
+def get_all_relevant_notification_overrides(user_id: int, target_id: Optional[int]) -> List[db_models.ConnectionStatusOverrides]:
     query = db_models.db.session.query(db_models.ConnectionStatusOverrides) \
         .filter(db_models.ConnectionStatusOverrides.user_id == user_id)
 
@@ -249,7 +249,7 @@ def merge_notifications_overrides_to_one(res: List[db_models.ConnectionStatusOve
     return final_override_preferences
 
 
-def get_effective_notification_settings(user_id: int, target_id: int) -> Optional[dict]:
+def get_effective_notification_settings(user_id: int, target_id: Optional[int]) -> Optional[dict]:
     # Todo: This is prime suspect for redis caching. Otherwise notification scheduler will be doing a coffin dance.
 
     # warning: I'm editing live models, do NOT persis changes to DB.
@@ -288,6 +288,14 @@ def get_effective_notification_settings(user_id: int, target_id: int) -> Optiona
             single_connection['notice'] = "Email connection can't be considered enabled until it's validated."
 
     return connection_lists
+
+
+def get_effective_active_notification_settings(user_id: int, target_id: Optional[int]) -> Optional[dict]:
+    all_effective_notification_settings = get_effective_notification_settings(user_id, target_id)
+    answer = {}
+    for single_channel_name in CONNECTION_DB_MODELS_TYPES:
+        answer[single_channel_name] = list(filter(lambda x: x["active"], all_effective_notification_settings[single_channel_name]))
+    return answer
 
 
 def mail_add(user_id: int, emails: str) -> Tuple[str, int]:

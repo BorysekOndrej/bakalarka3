@@ -518,6 +518,21 @@ def api_notification_settings(user_id=None, target_id=None):
     connection_lists = actions.get_effective_notification_settings(user_id, target_id)
     return jsonify(connection_lists)
 
+@bp.route('/active_notification_settings', methods=['GET'])
+@bp.route('/active_notification_settings/<int:user_id>', methods=['GET'])
+@bp.route('/active_notification_settings/<int:user_id>/null', methods=['GET'])
+@bp.route('/active_notification_settings/<int:user_id>/<int:target_id>', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def api_active_notification_settings(user_id=None, target_id=None):
+    if user_id is None:
+        user_id = authentication_utils.get_user_id_from_current_jwt()
+
+    if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
+        return "Target either doesn't exist or user is not allowed to see it.", 401
+
+    connection_lists = actions.get_effective_active_notification_settings(user_id, target_id)
+    return jsonify(connection_lists)
+
 
 @bp.route('/scan_result_history', methods=['GET'])
 @bp.route('/scan_result_history/<int:x_days>', methods=['GET'])
