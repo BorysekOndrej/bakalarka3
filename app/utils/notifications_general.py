@@ -24,10 +24,10 @@ class EventType (Enum):
 
 
 class Notification(object):
-    def __init__(self, channel: Channels, plain_text: Optional[str] = None):
+    def __init__(self, channel: Channels, text: Optional[str] = None):
         self.event_id: int = None  # this is so that we can match Slack and Mail notification for the same event
         self.channel: Channels = channel
-        self.plain_text: str = plain_text if plain_text else ""
+        self.text: str = text or ""
 
 
 class MailNotification(Notification):
@@ -35,7 +35,12 @@ class MailNotification(Notification):
         super().__init__(Channels.Mail)
         self.recipient_email: str = None
         self.subject: str = None
-        self.formatted_text: str = None
+
+
+class SlackNotification(Notification):
+    def __init__(self):
+        super().__init__(Channels.Slack)
+        self.webhook: str = None
 
 
 # def get_res_old_and_new(changed_targets):
@@ -242,8 +247,7 @@ def craft_expiration_email(recipient_email, res, notification_pref: dict):
         res.subject = f"Certificate expiration notification ({target}) - Expired days {days_remaining} ago"
 
     # todo: use flask templating
-    res.plain_text = res.subject  # todo
-    res.formatted_text = res.subject  # todo
+    res.text = res.subject  # todo
     return res
 
 
@@ -259,7 +263,7 @@ def send_notifications(planned_notifications: Optional[List[Notification]] = Non
             }
             res = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict, get_only=True)
             if res is None:
-                notifications_send.email_send_msg(x.recipient_email, x.formatted_text, x.subject)
+                notifications_send.email_send_msg(x.recipient_email, x.text, x.subject)
                 res = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict)
 
         if x.channel == Channels.Slack:
