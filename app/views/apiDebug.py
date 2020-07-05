@@ -3,6 +3,7 @@ import json
 import random
 from typing import List, Optional, Tuple
 
+import flask
 from flask import Blueprint, redirect, request
 from sqlalchemy import or_
 
@@ -470,4 +471,11 @@ def show_notification_connections(target_id=None):
     user_id = authentication_utils.get_user_id_from_current_jwt()
     connection_lists = get_effective_notification_settings(user_id, target_id)
     return jsonify(connection_lists)
+
+
+@bp.route('/url_map', methods=['GET'])
+def debug_url_map():
+    a = flask.current_app.url_map
+    # b = flask.url_for("apiDebug.mail_validate", db_code="teasd", _external=True)
+    return str(a)
 
