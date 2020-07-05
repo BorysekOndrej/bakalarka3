@@ -288,24 +288,30 @@ def craft_expiration_email(recipient_email, res, notification_pref: dict):
         return None
 
 
-
 def send_notifications(planned_notifications: Optional[List[Notification]] = None):
     if planned_notifications is None:
         planned_notifications = []
     for x in planned_notifications:
-        if x.channel == Channels.Mail:
-            x: MailNotification
-            log_dict = {
-                "sent_notification_id": x.event_id,
-                "channel": x.channel.value
-            }
-            res, existing = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict, get_only=True)
-            if res is None:
-                notifications_send.email_send_msg(x.recipient_email, x.text, x.subject)
+        log_dict = {
+            "sent_notification_id": x.event_id,  # todo: make it id, not event_id
+            "channel": x.channel.value
+        }
+        res, existing = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict, get_only=True)
+        if res is None:
+            if send_single_notification(x):
                 res = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict)
+            else:
+                logger.warning("Sending of notification failed.")
 
-        if x.channel == Channels.Slack:
-            pass  # todo
+
+def send_single_notification(x: Notification) -> bool:
+    if x.channel == Channels.Mail:
+        x: MailNotification
+        return notifications_send.email_send_msg(x.recipient_email, x.text, x.subject)
+    if x.channel == Channels.Slack:
+        x: SlackNotification
+        return notifications_send.slack_send_msg_via_webhook(x.webhook, x.text)
+    return False
 
 
 def extract_emails_active(pref) -> bool:
