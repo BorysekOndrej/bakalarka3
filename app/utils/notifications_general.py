@@ -10,37 +10,13 @@ from loguru import logger
 import config
 import app.utils.db_utils as db_utils
 from app.utils.notifications_preferences import get_effective_active_notification_settings
-
-
-class Channels (Enum):
-    Mail = 1
-    Slack = 2
+from app.utils.notification_connection_types import Notification, SlackNotification, Channels, MailNotification
 
 
 class EventType (Enum):
     ClosingExpiration = 1
     AlreadyExpired = 2
     GradeLowered = 3
-
-
-class Notification(object):
-    def __init__(self, channel: Channels, text: Optional[str] = None):
-        self.event_id: int = None  # this is so that we can match Slack and Mail notification for the same event
-        self.channel: Channels = channel
-        self.text: str = text or ""
-
-
-class MailNotification(Notification):
-    def __init__(self):
-        super().__init__(Channels.Mail)
-        self.recipient_email: str = None
-        self.subject: str = None
-
-
-class SlackNotification(Notification):
-    def __init__(self):
-        super().__init__(Channels.Slack)
-        self.webhook: str = None
 
 
 class NotificationTypeExpiration(object):
@@ -157,9 +133,17 @@ class NotificationTypeExpiration(object):
         return self.event_id_generator()
 
     def craft_slacks(self) -> List[SlackNotification]:
-        res = SlackNotification()
-        res.text = self.cract_plain_text()
-        return [res]
+        channel_preferences = self.notification_preferences.get("slack")
+        notifications_to_send = []
+
+        for single_slack_connection in channel_preferences:
+            res = SlackNotification()
+            res.event_id = self.event_id_generator()
+            res.connection_id = single_slack_connection["id"]
+            res.text = self.cract_plain_text()
+            notifications_to_send.append(res)
+
+        return notifications_to_send
 
 
 
@@ -250,20 +234,10 @@ def send_notifications(planned_notifications: Optional[List[Notification]] = Non
         }
         res, existing = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict, get_only=True)
         if res is None:
-            if send_single_notification(x):
+            if notifications_send.send_single_notification(x):
                 res = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict)
             else:
                 logger.warning("Sending of notification failed.")
-
-
-def send_single_notification(x: Notification) -> bool:
-    if x.channel == Channels.Mail:
-        x: MailNotification
-        return notifications_send.email_send_msg(x.recipient_email, x.text, x.subject)
-    if x.channel == Channels.Slack:
-        x: SlackNotification
-        return notifications_send.slack_send_msg_via_webhook(x.webhook, x.text)
-    return False
 
 
 def extract_and_parse_notifications_x_days_before_expiration(pref: dict) -> set:
