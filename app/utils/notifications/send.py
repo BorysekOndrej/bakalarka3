@@ -4,7 +4,7 @@ import app.db_models as db_models
 from config import MailConfig
 
 
-from app.utils.notification_connection_types import Notification, SlackNotification, Channels, MailNotification
+from app.utils.notifications.connection_types import Notification, SlackNotification, Channels, MailNotification
 
 
 def send_single_notification(x: Notification) -> bool:

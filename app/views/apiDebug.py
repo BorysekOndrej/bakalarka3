@@ -1,21 +1,19 @@
 import datetime
 import json
 import random
-from typing import List, Optional, Tuple
 
 import flask
-from flask import Blueprint, redirect, request
-from sqlalchemy import or_
+from flask import Blueprint, redirect
 
 import app.utils.randomCodes as randomCodes
 from config import FlaskConfig, SlackConfig, MailConfig
 from app.utils.http_request_util import get_client_ip, limiter
-from app.utils.notifications_preferences import mail_add, mail_delete, list_connections_of_type, get_effective_notification_settings
+from app.utils.notifications.user_preferences import mail_add, mail_delete, list_connections_of_type, get_effective_notification_settings
 
 bp = Blueprint('apiDebug', __name__)
 
 
-from flask import request, jsonify, current_app
+from flask import request, jsonify
 
 import flask_jwt_extended
 
@@ -197,14 +195,14 @@ def test_get_or_create_or_update_by_unique():
 
 @bp.route('/test_sending_notifications/<int:target_id>', methods=['GET'])
 def test_sending_notifications(target_id):
-    import app.utils.notifications_general as notifications_general
+    import app.utils.notifications.general as notifications_general
     notifications_general.schedule_notifications([target_id])
     return "done", 200
 
 
 @bp.route('/test_notifications_scheduler/', methods=['GET'])
 def test_notifications_scheduler():
-    import app.utils.notifications_general as notifications_general
+    import app.utils.notifications.general as notifications_general
     notifications_general.schedule_notifications()
     return "done", 200
 
@@ -293,7 +291,7 @@ def test_recalculate_simplified_all():
 def test_slack2():
     import os
     slack_webhook = os.environ['SLACK_WEBHOOK']
-    import app.utils.notifications_send as notifications_send
+    import app.utils.notifications.send as notifications_send
     res = notifications_send.slack_send_msg_via_webhook(slack_webhook, "test2")
     return f'{res.status}', 200 if res.ok else 400
 
@@ -302,7 +300,7 @@ def test_slack2():
 def test_mail1():
     import os
     mail_test_dst = os.environ['MAIL_TEST_DST']
-    import app.utils.notifications_send as notifications_send
+    import app.utils.notifications.send as notifications_send
     res = notifications_send.email_send_msg(mail_test_dst, "test tlsinventory")
     return f'{res.status}', 200 if res.ok else 400
 
@@ -335,7 +333,7 @@ def slack_redirect_to_oauth():
 
 @bp.route("/slack/test_auth_to_db", methods=["GET"])
 def slack_test():
-    import app.utils.notifications_slack as notifications_slack
+    import app.utils.notifications.slack as notifications_slack
     return notifications_slack.save_slack_config()
 
 
@@ -366,7 +364,7 @@ def slack_oauth_callback():
         return res_or_error_msg, 400
     res: db_models.TmpRandomCodes = res_or_error_msg
 
-    import app.utils.notifications_slack as notifications_slack
+    import app.utils.notifications.slack as notifications_slack
     ok = notifications_slack.validate_code_and_save(auth_code, res.user_id)
     if ok:
         return 'OK. Window will close in 2 seconds. <script>setTimeout(function(){ close() }, 2000);</script>', 200

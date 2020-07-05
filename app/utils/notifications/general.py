@@ -1,13 +1,13 @@
 from typing import List, Optional, Tuple, Dict
 
-import app.utils.notifications_send as notifications_send
+import app.utils.notifications.send as notifications_send
 import app.db_models as db_models
 
 from loguru import logger
 
 import app.utils.db_utils as db_utils
-from app.utils.notifications_preferences import get_effective_active_notification_settings
-from app.utils.notification_connection_types import Notification
+from app.utils.notifications.user_preferences import get_effective_active_notification_settings
+from app.utils.notifications.connection_types import Notification
 from app.utils.notifications.event_type_expiration import NotificationTypeExpiration
 
 # def get_res_old_and_new(changed_targets):

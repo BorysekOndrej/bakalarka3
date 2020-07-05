@@ -3,7 +3,7 @@ from typing import Dict, Tuple, Set, List
 from loguru import logger
 
 import app.db_models as db_models
-from app.utils.notification_connection_types import Notification, SlackNotification, MailNotification
+from app.utils.notifications.connection_types import Notification, SlackNotification, MailNotification
 from app.utils.notifications.event_types import EventType
 from config import NotificationsConfig
 

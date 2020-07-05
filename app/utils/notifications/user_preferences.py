@@ -8,7 +8,7 @@ import flask
 
 import app.db_models as db_models
 import app.utils.randomCodes as randomCodes
-import app.utils.notifications_send as notifications_send
+import app.utils.notifications.send as notifications_send
 
 
 # warning: to the keys of the following dict are tied up values in DB. Do not change.
