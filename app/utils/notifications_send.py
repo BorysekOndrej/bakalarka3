@@ -18,7 +18,7 @@ def send_single_notification(x: Notification) -> bool:
         x: SlackNotification
         slack_connection_id = x.connection_id
         slack_connection = db_models.db.session.query(db_models.SlackConnections).get(slack_connection_id)
-        res = slack_send_msg_via_webhook(slack_connection.webhook_url, x.text)
+        res = slack_send_msg(slack_connection, x.text)
 
     if res is None:
         return False
