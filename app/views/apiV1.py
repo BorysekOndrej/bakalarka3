@@ -82,7 +82,7 @@ def api_target_by_id(target_id: int):
                                                                      {"target_id": target.id, "user_id": user_id},
                                                                      get_only=True)
 
-    notifications = actions.get_effective_notification_settings(user_id, target_id)
+    notifications = get_effective_notification_settings(user_id, target_id)
 
     return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
 
@@ -371,7 +371,8 @@ def api_get_user_targets():
                     # todo: consider saving the simplified result
 
                 if scan_result_simplified:
-                    obj["expires"] = str(datetime.datetime.fromtimestamp(single_res.ScanResultsSimplified.notAfter))
+                    if isinstance(single_res.ScanResultsSimplified.notAfter, int):
+                        obj["expires"] = str(datetime.datetime.fromtimestamp(single_res.ScanResultsSimplified.notAfter))
                     obj["grade"] = single_res.ScanResultsSimplified.grade
                     obj["grade_reasons"] = single_res.ScanResultsSimplified.grade_reasons
                     continue
