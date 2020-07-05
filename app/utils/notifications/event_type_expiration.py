@@ -116,7 +116,7 @@ class NotificationTypeExpiration(object):
 
         return notifications_to_send
 
-    def cract_plain_text(self):
+    def craft_plain_text(self):
         # fallback when more specific function for channel is not available
         # todo: actual plaintext
         return self.event_id_generator()
@@ -129,7 +129,7 @@ class NotificationTypeExpiration(object):
             res = SlackNotification()
             res.event_id = self.event_id_generator()
             res.connection_id = single_slack_connection["id"]
-            res.text = self.cract_plain_text()
+            res.text = self.craft_plain_text()
             notifications_to_send.append(res)
 
         return notifications_to_send
