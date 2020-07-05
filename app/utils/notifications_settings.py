@@ -1,16 +1,14 @@
 import copy
 from itertools import chain
 from typing import List, Optional, Tuple, Union
-
 import jsons
 from loguru import logger
-
-import app.db_models as db_models
 from sqlalchemy import or_
 
-# warning: to the keys of the following dict are tied up values in DB. Do not change.
+import app.db_models as db_models
 import app.utils.randomCodes as randomCodes
 
+# warning: to the keys of the following dict are tied up values in DB. Do not change.
 CONNECTION_DB_MODELS_TYPES = {
     'slack': db_models.SlackConnections,
     'email': db_models.MailConnections
