@@ -1,22 +1,14 @@
-import copy
 import datetime
 import json
-from itertools import chain
-from typing import Optional, List, Dict, Tuple, Union
-
-import jsons
-from sqlalchemy import or_
+from typing import Optional, List, Dict, Tuple
 
 import app.scan_scheduler as scan_scheduler
-import app.utils.randomCodes as randomCodes
 from app import db_models, db_schemas, logger
 import app.object_models as object_models
-import app.utils.db_utils_advanced as db_utils_advanced
 import app.utils.sslyze_scanner as sslyze_scanner
 import app.utils.sslyze_parse_result as sslyze_parse_result
 
 from config import FlaskConfig, SslyzeConfig
-import app.utils.sslyze_result_simplify as sslyze_result_simplify
 
 
 def get_target_definition_by_ids(target_ids: List[int], user_id: int) -> bool:

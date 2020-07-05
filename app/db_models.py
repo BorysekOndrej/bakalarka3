@@ -10,7 +10,7 @@ from sqlalchemy.types import TypeDecorator
 from typing import Optional
 
 import app
-import app.utils.db_utils as db_utils
+import app.utils.db.basic as db_utils
 from sslyze.ssl_settings import TlsWrappedProtocolEnum
 
 from config import SchedulerConfig

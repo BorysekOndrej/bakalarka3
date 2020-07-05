@@ -25,8 +25,8 @@ from loguru import logger
 
 import flask_jwt_extended
 
-import app.utils.db_utils as db_utils
-import app.utils.db_utils_advanced as db_utils_advanced
+import app.utils.db.basic as db_utils
+import app.utils.db.advanced as db_utils_advanced
 import app.scan_scheduler as scan_scheduler
 import app.db_schemas as db_schemas
 import app.db_models as db_models

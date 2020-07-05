@@ -15,8 +15,8 @@ import json
 import datetime
 
 import app.utils.certificate as certificate
-import app.utils.db_utils as db_utils
-import app.utils.db_utils_advanced as db_utils_advanced
+import app.utils.db.basic as db_utils
+import app.utils.db.advanced as db_utils_advanced
 import app.utils.files as files
 
 still_to_parse_test = True

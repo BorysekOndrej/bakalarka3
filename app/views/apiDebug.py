@@ -17,8 +17,8 @@ from flask import request, jsonify
 
 import flask_jwt_extended
 
-import app.utils.db_utils as db_utils
-import app.utils.db_utils_advanced as db_utils_advanced
+import app.utils.db.basic as db_utils
+import app.utils.db.advanced as db_utils_advanced
 import app.utils.sslyze_parse_result as sslyze_parse_result
 import app.scan_scheduler as scan_scheduler
 from app import db_models, logger

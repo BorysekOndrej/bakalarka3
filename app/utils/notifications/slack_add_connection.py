@@ -2,7 +2,7 @@ from slack import WebClient
 
 import app.db_models as db_models
 import app.db_schemas as db_schemas
-import app.utils.db_utils_advanced as db_utils_advanced
+import app.utils.db.advanced as db_utils_advanced
 
 from config import SlackConfig
 from loguru import logger

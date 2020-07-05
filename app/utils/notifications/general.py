@@ -5,7 +5,7 @@ import app.db_models as db_models
 
 from loguru import logger
 
-import app.utils.db_utils as db_utils
+import app.utils.db.basic as db_utils
 from app.utils.notifications.user_preferences import get_effective_active_notification_settings
 from app.utils.notifications.connection_types import Notification
 from app.utils.notifications.event_type_expiration import NotificationTypeExpiration

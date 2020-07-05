@@ -8,7 +8,7 @@ import marshmallow_sqlalchemy.fields
 
 import app.db_schemas as db_schemas
 import app.db_models as db_models
-import app.utils.db_utils_advanced as db_utils_advanced
+import app.utils.db.advanced as db_utils_advanced
 
 
 class TargetWithExtra(object):

@@ -1,8 +1,7 @@
 from typing import Optional
 
 import app.db_models as db_models
-import app.db_schemas as db_schemas
-import app.utils.db_utils as db_utils
+import app.utils.db.basic as db_utils
 from loguru import logger
 import app.utils.grade_scan_result as grade_scan_result
 
