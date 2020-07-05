@@ -14,6 +14,7 @@ import app.utils.ct_search as ct_search
 import app.utils.sslyze_result_simplify as sslyze_result_simplify
 
 from config import FlaskConfig
+from app.utils.notifications_settings import get_effective_notification_settings, get_effective_active_notification_settings
 
 bp = Blueprint('apiV1', __name__)
 
@@ -515,7 +516,7 @@ def api_notification_settings(user_id=None, target_id=None):
     if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
         return "Target either doesn't exist or user is not allowed to see it.", 401
 
-    connection_lists = actions.get_effective_notification_settings(user_id, target_id)
+    connection_lists = get_effective_notification_settings(user_id, target_id)
     return jsonify(connection_lists)
 
 @bp.route('/active_notification_settings', methods=['GET'])
@@ -530,7 +531,7 @@ def api_active_notification_settings(user_id=None, target_id=None):
     if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
         return "Target either doesn't exist or user is not allowed to see it.", 401
 
-    connection_lists = actions.get_effective_active_notification_settings(user_id, target_id)
+    connection_lists = get_effective_active_notification_settings(user_id, target_id)
     return jsonify(connection_lists)
 
 
