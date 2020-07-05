@@ -92,7 +92,7 @@ def send_notifications(planned_notifications: Optional[List[Notification]] = Non
         planned_notifications = []
     for x in planned_notifications:
         log_dict = {
-            "sent_notification_id": x.event_id,  # todo: make it id, not event_id
+            "sent_notification_id": x.notification_id(),
             "channel": x.channel.value
         }
         res, existing = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict, get_only=True)
