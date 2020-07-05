@@ -229,7 +229,7 @@ def test_sslyze_parsing():
 
 @bp.route('/test_grading/<int:scan_result_id>', methods=['GET'])
 def test_grading(scan_result_id):
-    import app.utils.grade_scan_result as grade_scan_result
+    import app.utils.sslyze.grade_scan_result as grade_scan_result
     import app.utils.sslyze.simplify_result as sslyze_result_simplify
 
     res = db_models.db.session \

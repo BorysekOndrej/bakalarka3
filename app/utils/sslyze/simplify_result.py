@@ -3,7 +3,7 @@ from typing import Optional
 import app.db_models as db_models
 import app.utils.db.basic as db_utils
 from loguru import logger
-import app.utils.grade_scan_result as grade_scan_result
+import app.utils.sslyze.grade_scan_result as grade_scan_result
 
 
 def count_after_split_of_param_if_not_none(x: Optional[object], param_name: str) -> Optional[int]:
