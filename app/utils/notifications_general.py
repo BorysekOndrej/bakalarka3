@@ -240,54 +240,6 @@ def make_dict_notification_settings_by_scan_order_id(main_data):
     return notification_settings_by_scan_order_id
 
 
-def craft_notification_for_single_event(event_type: EventType, res, pref: dict):
-    resulting_notifications = []
-    if extract_emails_active(pref):
-        resulting_notifications.extend(craft_mail_notification_for_single_event(event_type, res, pref))
-
-    if extract_slack_active(pref):
-        resulting_notifications.extend(craft_slack_notification_for_single_event(event_type, res, pref))
-
-    return resulting_notifications
-
-
-def craft_mail_notification_for_single_event(event_type: EventType, res, pref: dict):
-    if not extract_emails_active(pref):
-        return []
-
-    resulting_notifications = []
-
-    emails_list = extract_and_parse_emails_list(pref)
-    for single_email in emails_list:
-        # BEGIN SWITCH EVENT TYPES
-        finalized_single_notification = None
-        if event_type == EventType.ClosingExpiration:
-            finalized_single_notification = craft_expiration_email(single_email, res, pref)
-        if event_type == EventType.AlreadyExpired:
-            finalized_single_notification = craft_expiration_email(single_email, res, pref)
-
-        # END SWITCH EVENT TYPES
-
-        if finalized_single_notification:
-            resulting_notifications.append(finalized_single_notification)
-
-    return resulting_notifications
-
-
-def craft_slack_notification_for_single_event(event_type: EventType, res, pref: dict):
-    if not extract_slack_active(pref):
-        return []
-    resulting_notifications = []
-    logger.info('Slack notifications are not yet supported.')
-    return resulting_notifications  # todo
-
-
-def craft_expiration_email(recipient_email, res, notification_pref: dict):
-    if not extract_emails_active(notification_pref):
-        logger.warning("craft_expiration_email reached even when emails_active is not active")
-        return None
-
-
 def send_notifications(planned_notifications: Optional[List[Notification]] = None):
     if planned_notifications is None:
         planned_notifications = []
@@ -314,14 +266,6 @@ def send_single_notification(x: Notification) -> bool:
     return False
 
 
-def extract_emails_active(pref) -> bool:
-    return pref.get("emails_active", False)
-
-
-def extract_slack_active(pref: dict) -> bool:
-    return pref.get("slack_active", False)
-
-
 def extract_and_parse_notifications_x_days_before_expiration(pref: dict) -> set:
     notifications_x_days_before_expiration = set()
 
@@ -335,16 +279,3 @@ def extract_and_parse_notifications_x_days_before_expiration(pref: dict) -> set:
             notifications_x_days_before_expiration.add(int(x))
 
     return notifications_x_days_before_expiration
-
-
-def extract_and_parse_emails_list(pref: dict) -> Set[str]:
-    res = set()
-
-    emails_list_string = pref.get("emails_list", "")
-    emails_list = emails_list_string.split(";")
-    for single_email in emails_list:
-        if len(single_email) == 0:
-            continue
-        res.add(single_email[:].strip())
-
-    return res
