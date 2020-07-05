@@ -507,6 +507,7 @@ def api_get_basic_cert_info_for_target(target_id):
 
 
 @bp.route('/notification_settings', methods=['GET'])
+@bp.route('/notification_settings/undefined', methods=['GET'])
 @bp.route('/notification_settings/null', methods=['GET'])
 @bp.route('/notification_settings/<int:target_id>', methods=['GET'])
 @flask_jwt_extended.jwt_required
@@ -522,6 +523,7 @@ def api_notification_settings(user_id=None, target_id=None):
 
 
 @bp.route('/active_notification_settings', methods=['GET'])
+@bp.route('/active_notification_settings/undefined', methods=['GET'])
 @bp.route('/active_notification_settings/null', methods=['GET'])
 @bp.route('/active_notification_settings/<int:target_id>', methods=['GET'])
 @flask_jwt_extended.jwt_required
