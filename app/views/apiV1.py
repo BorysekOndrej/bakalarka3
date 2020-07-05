@@ -506,9 +506,8 @@ def api_get_basic_cert_info_for_target(target_id):
 
 
 @bp.route('/notification_settings', methods=['GET'])
-@bp.route('/notification_settings/<int:user_id>', methods=['GET'])
-@bp.route('/notification_settings/<int:user_id>/null', methods=['GET'])
-@bp.route('/notification_settings/<int:user_id>/<int:target_id>', methods=['GET'])
+@bp.route('/notification_settings/null', methods=['GET'])
+@bp.route('/notification_settings/<int:target_id>', methods=['GET'])
 @flask_jwt_extended.jwt_required
 def api_notification_settings(user_id=None, target_id=None):
     if user_id is None:
@@ -520,10 +519,10 @@ def api_notification_settings(user_id=None, target_id=None):
     connection_lists = get_effective_notification_settings(user_id, target_id)
     return jsonify(connection_lists)
 
+
 @bp.route('/active_notification_settings', methods=['GET'])
-@bp.route('/active_notification_settings/<int:user_id>', methods=['GET'])
-@bp.route('/active_notification_settings/<int:user_id>/null', methods=['GET'])
-@bp.route('/active_notification_settings/<int:user_id>/<int:target_id>', methods=['GET'])
+@bp.route('/active_notification_settings/null', methods=['GET'])
+@bp.route('/active_notification_settings/<int:target_id>', methods=['GET'])
 @flask_jwt_extended.jwt_required
 def api_active_notification_settings(user_id=None, target_id=None):
     if user_id is None:
