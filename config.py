@@ -117,8 +117,8 @@ class MailConfig(object):
     password = os.environ.get('MAIL_PASSWORD') or "ipsum"
     sender_email = os.environ.get('MAIL_SENDER_EMAIL') or username
 
-    hostname = os.environ.get('MAIL_HOSTNAME') or "127.0.0.1"
-    port = int(os.environ.get('MAIL_PORT') or 25)
-    tls = bool(os.environ.get('MAIL_TLS_ENABLED') or False)
+    hostname = os.environ.get('MAIL_HOSTNAME') or "127.0.0.1"   # will be overwriten if you use gmail
+    port = int(os.environ.get('MAIL_PORT') or 25)               # will be overwriten if you use gmail
+    tls = bool(os.environ.get('MAIL_TLS_ENABLED') or False)     # will be overwriten if you use gmail
 
     check_refresh_cookie_on_validating_email = False  # might cause problems with APIs
