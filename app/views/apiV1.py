@@ -14,7 +14,7 @@ import app.utils.ct_search as ct_search
 import app.utils.sslyze_result_simplify as sslyze_result_simplify
 
 from config import FlaskConfig
-from app.utils.notifications_settings import get_effective_notification_settings, \
+from app.utils.notifications_preferences import get_effective_notification_settings, \
     get_effective_active_notification_settings, NotificationChannelOverride, \
     filter_ids_of_notification_settings_user_can_see, mail_add
 

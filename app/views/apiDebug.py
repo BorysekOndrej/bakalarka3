@@ -10,7 +10,7 @@ from sqlalchemy import or_
 import app.utils.randomCodes as randomCodes
 from config import FlaskConfig, SlackConfig, MailConfig
 from app.utils.http_request_util import get_client_ip, limiter
-from app.utils.notifications_settings import mail_add, mail_delete, list_connections_of_type, get_effective_notification_settings
+from app.utils.notifications_preferences import mail_add, mail_delete, list_connections_of_type, get_effective_notification_settings
 
 bp = Blueprint('apiDebug', __name__)
 

@@ -9,7 +9,7 @@ from loguru import logger
 
 import config
 import app.utils.db_utils as db_utils
-from app.utils.notifications_settings import get_effective_active_notification_settings
+from app.utils.notifications_preferences import get_effective_active_notification_settings
 
 
 class Channels (Enum):
