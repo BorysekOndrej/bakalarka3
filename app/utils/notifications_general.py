@@ -43,6 +43,86 @@ class SlackNotification(Notification):
         self.webhook: str = None
 
 
+class NotificationTypeExpiration(object):
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def check_condition_and_create_notifications(main_data) -> List[Notification]:
+        main_data: Tuple[db_models.ScanOrder, db_models.Target, db_models.LastScan, db_models.ScanResults]
+        expiration_by_target_id = {}
+        notification_settings_by_scan_order_id = make_dict_notification_settings_by_scan_order_id(main_data)
+
+        for single_res in main_data:
+            key = single_res.Target.id
+            val = single_res.ScanResults.certificate_information.received_certificate_chain_list.not_after()
+            expiration_by_target_id[key] = val
+
+        scan_order_ids_expired = set()
+        scan_order_ids_nearing_expiration = set()
+
+        for single_res in main_data:
+            scan_order_id = single_res.ScanOrder.id
+            target_id = single_res.ScanOrder.target_id
+
+            expires = expiration_by_target_id[target_id]
+            notification_settings = notification_settings_by_scan_order_id[scan_order_id]
+
+            # todo: make filtering based on notification settings. Currently notifying about 1 day expire only
+            if expires < datetime.datetime.now():
+                scan_order_ids_expired.add(single_res.ScanOrder.id)
+                continue
+            if expires > datetime.datetime.now() + datetime.timedelta(
+                    days=config.NotificationsConfig.start_sending_notifications_x_days_before_expiration):
+                continue
+
+            notifications_x_days_before_expiration \
+                = extract_and_parse_notifications_x_days_before_expiration(notification_settings)
+
+            certificate_chain = single_res.LastScan.result.certificate_information.received_certificate_chain_list
+            not_after = certificate_chain.not_after()
+            days_remaining = (not_after - datetime.datetime.now()).days
+
+            if days_remaining in notifications_x_days_before_expiration:
+                scan_order_ids_nearing_expiration.add(single_res.ScanOrder.id)
+
+        logger.info(f"scan_order_ids_expired orders ids: {scan_order_ids_expired}")
+        logger.info(f"scan_order_ids_nearing_expiration ids: {scan_order_ids_nearing_expiration}")
+
+        notifications_to_send = []
+
+        for single_res in main_data:
+            scan_order_id = single_res.ScanOrder.id
+
+            event_type = None
+            if single_res.ScanOrder.id in scan_order_ids_expired:
+                event_type = EventType.AlreadyExpired
+            elif single_res.ScanOrder.id in scan_order_ids_nearing_expiration:
+                event_type = EventType.ClosingExpiration
+
+            if event_type is None:
+                continue
+
+            final_pref = notification_settings_by_scan_order_id[scan_order_id]
+            notifications_to_send.extend(craft_notification_for_single_event(event_type, single_res, final_pref))
+
+        return notifications_to_send
+
+    def craft_plain_text(self):
+        return "test"
+
+    def craft_mail(self):
+        res = MailNotification()
+        res.text = self.cract_plain_text()
+        return res
+
+    def craft_slack(self):
+        res = SlackNotification()
+        res.text = self.cract_plain_text()
+        return res
+
+
+
 # def get_res_old_and_new(changed_targets):
 #     # todo: this might not work, it's not finished.
 #     res_new = db_models.db.session \
