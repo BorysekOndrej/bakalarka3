@@ -8,15 +8,22 @@ from app.utils.notification_connection_types import Notification, SlackNotificat
 
 
 def send_single_notification(x: Notification) -> bool:
+    res = None
+
     if x.channel == Channels.Mail:
         x: MailNotification
-        return email_send_msg(x.recipient_email, x.text, x.subject)
+        res = email_send_msg(x.recipient_email, x.text, x.subject)
+
     if x.channel == Channels.Slack:
         x: SlackNotification
         slack_connection_id = x.connection_id
         slack_connection = db_models.db.session.query(db_models.SlackConnections).get(slack_connection_id)
-        return slack_send_msg_via_webhook(slack_connection.webhook_url, x.text)
-    return False
+        res = slack_send_msg_via_webhook(slack_connection.webhook_url, x.text)
+
+    if res is None:
+        return False
+
+    return res.ok
 
 
 def slack_send_msg(slack_configuration: db_models.SlackConnections, msg: str):
