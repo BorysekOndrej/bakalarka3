@@ -333,7 +333,7 @@ def slack_redirect_to_oauth():
 
 @bp.route("/slack/test_auth_to_db", methods=["GET"])
 def slack_test():
-    import app.utils.notifications.slack as notifications_slack
+    import app.utils.notifications.slack_add_connection as notifications_slack
     return notifications_slack.save_slack_config()
 
 
@@ -364,7 +364,7 @@ def slack_oauth_callback():
         return res_or_error_msg, 400
     res: db_models.TmpRandomCodes = res_or_error_msg
 
-    import app.utils.notifications.slack as notifications_slack
+    import app.utils.notifications.slack_add_connection as notifications_slack
     ok = notifications_slack.validate_code_and_save(auth_code, res.user_id)
     if ok:
         return 'OK. Window will close in 2 seconds. <script>setTimeout(function(){ close() }, 2000);</script>', 200
