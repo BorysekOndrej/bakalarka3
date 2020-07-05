@@ -5,8 +5,8 @@ from typing import Optional, List, Dict, Tuple
 import app.scan_scheduler as scan_scheduler
 from app import db_models, db_schemas, logger
 import app.object_models as object_models
-import app.utils.sslyze_scanner as sslyze_scanner
-import app.utils.sslyze_parse_result as sslyze_parse_result
+import app.utils.sslyze.scanner as sslyze_scanner
+import app.utils.sslyze.parse_result as sslyze_parse_result
 
 from config import FlaskConfig, SslyzeConfig
 
@@ -50,7 +50,7 @@ def sslyze_scan(twe: List[object_models.TargetWithExtra]) -> Dict:
         ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
         ntwe_json_string = json.dumps(ntwe_json_list)
 
-        import app.utils.sslyze_background_redis as sslyze_background_redis
+        import app.utils.sslyze.background_redis as sslyze_background_redis
         return {'results_attached': False,
                 'backgroud_job_id': sslyze_background_redis.redis_sslyze_enqueu(ntwe_json_string)}
 

@@ -3,7 +3,7 @@ import redis
 import rq
 # from rq import get_current_job
 import app.object_models as object_models
-import app.utils.sslyze_scanner as sslyze_scanner
+import app.utils.sslyze.scanner as sslyze_scanner
 import config
 import requests
 

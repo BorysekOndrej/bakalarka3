@@ -10,7 +10,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 import app.object_models as object_models
 import app.utils.ct_search as ct_search
-import app.utils.sslyze_result_simplify as sslyze_result_simplify
+import app.utils.sslyze.simplify_result as sslyze_result_simplify
 
 from config import FlaskConfig
 from app.utils.notifications.user_preferences import get_effective_notification_settings, \

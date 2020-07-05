@@ -7,7 +7,7 @@ import app.db_schemas as db_schemas
 
 from loguru import logger
 import app.object_models as object_models
-import app.utils.sslyze_result_simplify as sslyze_result_simplify
+import app.utils.sslyze.simplify_result as sslyze_result_simplify
 from config import SslyzeConfig
 
 from sqlalchemy.exc import IntegrityError

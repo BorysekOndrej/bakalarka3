@@ -19,13 +19,13 @@ import flask_jwt_extended
 
 import app.utils.db.basic as db_utils
 import app.utils.db.advanced as db_utils_advanced
-import app.utils.sslyze_parse_result as sslyze_parse_result
+import app.utils.sslyze.parse_result as sslyze_parse_result
 import app.scan_scheduler as scan_scheduler
 from app import db_models, logger
 import app.db_schemas as db_schemas
 import app.utils.dns_utils as dns_utils
 import app.utils.ct_search as ct_search
-import app.utils.sslyze_scanner as sslyze_scanner
+import app.utils.sslyze.scanner as sslyze_scanner
 import app.utils.extract_test as extract_test
 import app.utils.authentication_utils as authentication_utils
 import app.utils.normalize_jsons as normalize_jsons
@@ -60,7 +60,7 @@ def debug_sslyze_batch_scan_enqueue_redis():
     # todo: DEPRECATED
     if not FlaskConfig.REDIS_ENABLED:
         return "Redis support is not enabled in config", 500
-    import app.utils.sslyze_background_redis as sslyze_background_redis
+    import app.utils.sslyze.background_redis as sslyze_background_redis
 
     # At this point I don't have access to DB (this can be run on sensor), so I can't really fully validate.
     twe = object_models.load_json_to_targets_with_extra(request.data)
@@ -74,7 +74,7 @@ def debug_sslyze_batch_scan_enqueue_redis():
 def debug_sslyze_batch_scan_result_redis(job_id):
     if not FlaskConfig.REDIS_ENABLED:
         return "Redis support is not enabled in config", 500
-    import app.utils.sslyze_background_redis as sslyze_background_redis
+    import app.utils.sslyze.background_redis as sslyze_background_redis
 
     job = sslyze_background_redis.redis_sslyze_fetch_job(job_id)
 
@@ -210,7 +210,7 @@ def test_notifications_scheduler():
 @bp.route('/test_sslyze_simplify/', methods=['GET'])
 @bp.route('/test_sslyze_simplify/<int:scan_result>', methods=['GET'])
 def test_sslyze_simplify(scan_result=1):
-    import app.utils.sslyze_result_simplify as sslyze_result_simplify
+    import app.utils.sslyze.simplify_result as sslyze_result_simplify
     res = db_models.db.session \
         .query(db_models.ScanResults) \
         .get(scan_result)
@@ -230,7 +230,7 @@ def test_sslyze_parsing():
 @bp.route('/test_grading/<int:scan_result_id>', methods=['GET'])
 def test_grading(scan_result_id):
     import app.utils.grade_scan_result as grade_scan_result
-    import app.utils.sslyze_result_simplify as sslyze_result_simplify
+    import app.utils.sslyze.simplify_result as sslyze_result_simplify
 
     res = db_models.db.session \
         .query(db_models.ScanResults) \
@@ -247,7 +247,7 @@ def test_grading(scan_result_id):
 
 @bp.route('/test_sslyze_simplify_insert/<int:scan_result_id>', methods=['GET'])
 def test_sslyze_simplify_insert(scan_result_id):
-    import app.utils.sslyze_result_simplify as sslyze_result_simplify
+    import app.utils.sslyze.simplify_result as sslyze_result_simplify
 
     res = db_models.db.session \
         .query(db_models.ScanResults) \
