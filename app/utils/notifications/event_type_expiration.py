@@ -19,14 +19,14 @@ class NotificationTypeExpiration(object):
         self.event_type = EventType.ClosingExpiration if self.days_remaining >= 0 else EventType.AlreadyExpired
 
     @staticmethod
-    def check_condition_and_create_notifications(main_data, notification_preferences_by_scan_order_id: Dict[int, dict])\
+    def check_condition_and_create_notifications(main_data, notification_preferences_by_scan_order_id: Dict[str, dict])\
             -> List[Notification]:
         scan_order_ids_expired, scan_order_ids_nearing_expiration = NotificationTypeExpiration.check_condition(main_data, notification_preferences_by_scan_order_id)
         notifications_to_send = NotificationTypeExpiration.create_notifications(main_data, notification_preferences_by_scan_order_id, scan_order_ids_expired, scan_order_ids_nearing_expiration)
         return notifications_to_send
 
     @staticmethod
-    def check_condition(main_data, notification_preferences_by_scan_order_id: Dict[int, dict])\
+    def check_condition(main_data, notification_preferences_by_scan_order_id: Dict[str, dict])\
             -> Tuple[Set, Set]:
         expiration_by_target_id = {}
 
@@ -69,7 +69,7 @@ class NotificationTypeExpiration(object):
         return scan_order_ids_expired, scan_order_ids_nearing_expiration
 
     @staticmethod
-    def create_notifications(main_data, notification_preferences_by_scan_order_id: Dict[int, dict],
+    def create_notifications(main_data, notification_preferences_by_scan_order_id: Dict[str, dict],
                              scan_order_ids_expired: Set, scan_order_ids_nearing_expiration: Set) -> List[Notification]:
         notifications_to_send = []
 
