@@ -4,9 +4,12 @@ from typing import List, Optional, Tuple, Union
 import jsons
 from loguru import logger
 from sqlalchemy import or_
+import flask
 
 import app.db_models as db_models
 import app.utils.randomCodes as randomCodes
+import app.utils.notifications_send as notifications_send
+
 
 # warning: to the keys of the following dict are tied up values in DB. Do not change.
 CONNECTION_DB_MODELS_TYPES = {
@@ -227,6 +230,12 @@ def mail_add_or_delete(user_id: int, emails: Union[str, List[str]], action: str)
         new_mail_connection = db_models.MailConnections()
         new_mail_connection.email = single_email
         new_mail_connection.user_id = user_id
+
+        validation_url = flask.url_for("apiDebug.mail_validate", db_code=db_code, _external=True)
+
+        notifications_send.email_send_msg(single_email,
+                                          validation_url,
+                                          "Please validate your email for TLSInventory")
         # todo: send email to that email address with db_code. Possibly use queue?
 
     return new_emails, 200
