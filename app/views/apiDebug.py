@@ -298,6 +298,15 @@ def test_slack():
     return f'{ok}', status_code
 
 
+@bp.route('/test_slack2', methods=['GET'])
+def test_slack2():
+    import os
+    slack_webhook = os.environ['SLACK_WEBHOOK']
+    import app.utils.notifications_send as notifications_send
+    res = notifications_send.slack_send_msg_via_webhook(slack_webhook, "test2")
+    return f'{res}', 200
+
+
 @bp.route("/slack/show_button", methods=["GET"])
 def slack_pre_install():
     # This function is adopted from Slack documentation.
