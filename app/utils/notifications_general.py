@@ -2,7 +2,7 @@ import datetime
 from enum import Enum
 from typing import List, Optional, Set
 
-import app.utils.notifications_mail as notifications_mail
+import app.utils.notifications_send as notifications_send
 import app.db_models as db_models
 
 from loguru import logger
@@ -259,7 +259,7 @@ def send_notifications(planned_notifications: Optional[List[Notification]] = Non
             }
             res = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict, get_only=True)
             if res is None:
-                notifications_mail.send_mail(x.recipient_email, x.subject, x.formatted_text)
+                notifications_send.email_send_msg(x.recipient_email, x.formatted_text, x.subject)
                 res = db_utils.get_or_create_by_unique(db_models.SentNotificationsLog, log_dict)
 
         if x.channel == Channels.Slack:
