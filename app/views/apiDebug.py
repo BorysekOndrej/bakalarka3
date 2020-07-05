@@ -288,16 +288,6 @@ def test_recalculate_simplified_all():
     return jsonify({'successfully': suc, 'all': len(res)}), 200
 
 
-@bp.route('/test_slack', methods=['POST'])
-def test_slack():
-    import os
-    api_token = os.environ['SLACK_API_TOKEN']
-    import app.utils.notifications_slack as notifications_slack
-    ok = notifications_slack.send_message("test1", api_token)
-    status_code = 200 if ok else 400
-    return f'{ok}', status_code
-
-
 @bp.route('/test_slack2', methods=['GET'])
 def test_slack2():
     import os

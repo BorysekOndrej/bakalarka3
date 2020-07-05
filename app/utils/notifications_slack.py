@@ -1,5 +1,4 @@
 from slack import WebClient
-from slack.errors import SlackApiError
 
 import app.db_models as db_models
 import app.db_schemas as db_schemas
@@ -8,24 +7,8 @@ import app.utils.db_utils_advanced as db_utils_advanced
 from config import SlackConfig
 from loguru import logger
 
-# todo: consider replacing with https://github.com/liiight/notifiers
 
-def send_message(msg, api_token=None, channel='#notificationstest'):
-    try:
-        client = WebClient(token=api_token)
-        response = client.chat_postMessage(
-            channel=channel,
-            text=msg)
-        assert response["message"]["text"] == msg
-    except SlackApiError as e:
-        # You will get a SlackApiError if "ok" is False
-        assert e.response["ok"] is False
-        assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
-        print(f"Got an error: {e.response['error']}")
-        return False
-    return True
-
-
+# todo: consider reworking code validation to not use official Slack library, because it's currently the only use-case
 def validate_code_and_save(auth_code, user_id) -> bool:
     # This function is adopted from Slack documentation.
 
