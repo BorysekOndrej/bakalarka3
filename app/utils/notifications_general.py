@@ -1,6 +1,6 @@
 import datetime
 from enum import Enum
-from typing import List, Optional, Set
+from typing import List, Optional, Set, Tuple
 
 import app.utils.notifications_send as notifications_send
 import app.db_models as db_models
@@ -70,6 +70,7 @@ class SlackNotification(Notification):
 #
 #     return res_old, res_new
 
+
 def get_scan_data_for_notifications_scheduler(limit_to_following_target_ids: Optional[List[int]] = None):
     qry = db_models.db.session \
         .query(db_models.ScanOrder,
@@ -79,7 +80,7 @@ def get_scan_data_for_notifications_scheduler(limit_to_following_target_ids: Opt
         .filter(db_models.ScanOrder.active == True) \
         .filter(db_models.ScanOrder.target_id == db_models.Target.id) \
         .filter(db_models.LastScan.target_id == db_models.Target.id) \
-        .filter(db_models.LastScan.result_id == db_models.ScanResults.id) \
+        .filter(db_models.LastScan.result_id == db_models.ScanResults.id)
 
     if limit_to_following_target_ids:
         deduplicated_target_ids = list(set(limit_to_following_target_ids))
@@ -117,62 +118,7 @@ def make_dict_notification_settings_by_scan_order_id(main_data):
 
 
 def expiring_notifications(main_data) -> List[Notification]:
-    expiration_by_target_id = {}
-    notification_settings_by_scan_order_id = make_dict_notification_settings_by_scan_order_id(main_data)
-
-    for single_res in main_data:
-        key = single_res.Target.id
-        val = single_res.ScanResults.certificate_information.received_certificate_chain_list.not_after()
-        expiration_by_target_id[key] = val
-
-    scan_order_ids_expired = set()
-    scan_order_ids_nearing_expiration = set()
-
-    for single_res in main_data:
-        scan_order_id = single_res.ScanOrder.id
-        target_id = single_res.ScanOrder.target_id
-
-        expires = expiration_by_target_id[target_id]
-        notification_settings = notification_settings_by_scan_order_id[scan_order_id]
-
-        # todo: make filtering based on notification settings. Currently notifying about 1 day expire only
-        if expires < datetime.datetime.now():
-            scan_order_ids_expired.add(single_res.ScanOrder.id)
-            continue
-        if expires > datetime.datetime.now() + datetime.timedelta(days=config.NotificationsConfig.start_sending_notifications_x_days_before_expiration):
-            continue
-
-        notifications_x_days_before_expiration\
-            = extract_and_parse_notifications_x_days_before_expiration(notification_settings)
-
-        certificate_chain = single_res.LastScan.result.certificate_information.received_certificate_chain_list
-        not_after = certificate_chain.not_after()
-        days_remaining = (not_after - datetime.datetime.now()).days
-
-        if days_remaining in notifications_x_days_before_expiration:
-            scan_order_ids_nearing_expiration.add(single_res.ScanOrder.id)
-
-    logger.info(f"scan_order_ids_expired orders ids: {scan_order_ids_expired}")
-    logger.info(f"scan_order_ids_nearing_expiration ids: {scan_order_ids_nearing_expiration}")
-
-    notifications_to_send = []
-
-    for single_res in main_data:
-        scan_order_id = single_res.ScanOrder.id
-
-        event_type = None
-        if single_res.ScanOrder.id in scan_order_ids_expired:
-            event_type = EventType.AlreadyExpired
-        elif single_res.ScanOrder.id in scan_order_ids_nearing_expiration:
-            event_type = EventType.ClosingExpiration
-
-        if event_type is None:
-            continue
-
-        final_pref = notification_settings_by_scan_order_id[scan_order_id]
-        notifications_to_send.extend(craft_notification_for_single_event(event_type, single_res, final_pref))
-
-    return notifications_to_send
+    return NotificationTypeExpiration.check_condition_and_create_notifications(main_data)
 
 
 def craft_notification_for_single_event(event_type: EventType, res, pref: dict):
