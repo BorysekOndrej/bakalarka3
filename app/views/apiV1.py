@@ -14,7 +14,9 @@ import app.utils.ct_search as ct_search
 import app.utils.sslyze_result_simplify as sslyze_result_simplify
 
 from config import FlaskConfig
-from app.utils.notifications_settings import get_effective_notification_settings, get_effective_active_notification_settings
+from app.utils.notifications_settings import get_effective_notification_settings, \
+    get_effective_active_notification_settings, NotificationChannelOverride, \
+    filter_ids_of_notification_settings_user_can_see, mail_add
 
 bp = Blueprint('apiV1', __name__)
 
@@ -92,7 +94,7 @@ def additional_channel_email_actions(email_pref: dict, user_id: int) -> bool:
     emails_to_be_added = getattr(email_pref, ADD_NEW_EMAILS_FIELD, None)
     if emails_to_be_added:
         try:
-            new_mails_or_exception_msg, status_code = actions.mail_add(user_id, emails_to_be_added)
+            new_mails_or_exception_msg, status_code = mail_add(user_id, emails_to_be_added)
             if status_code != 200:
                 raise Exception(new_mails_or_exception_msg)
             delattr(email_pref, ADD_NEW_EMAILS_FIELD)
@@ -149,7 +151,7 @@ def api_target():
             if notifications.get(single_channel) is None:
                 continue
             new_notification_settings[single_channel] = jsons.load(notifications.get(single_channel),
-                                                                   actions.NotificationChannelOverride)
+                                                                   NotificationChannelOverride)
 
             if single_channel == "email":
                 additional_channel_email_actions(new_notification_settings[single_channel], user_id)
@@ -157,13 +159,13 @@ def api_target():
     for single_channel in NOTIFICATION_CHANNELS:
         settings_current_channel = new_notification_settings[single_channel]
         settings_current_channel.force_enabled_ids = \
-            actions.filter_ids_of_notification_settings_user_can_see(
+            filter_ids_of_notification_settings_user_can_see(
                 user_id, single_channel, settings_current_channel.force_enabled_ids)
         settings_current_channel.force_disabled_ids = \
-            actions.filter_ids_of_notification_settings_user_can_see(
+            filter_ids_of_notification_settings_user_can_see(
                 user_id, single_channel, settings_current_channel.force_disabled_ids)
 
-        if jsons.dumps(settings_current_channel) == jsons.dumps(actions.NotificationChannelOverride()):
+        if jsons.dumps(settings_current_channel) == jsons.dumps(NotificationChannelOverride()):
             del new_notification_settings[single_channel]
 
     new_notification_settings_json_str = jsons.dumps(new_notification_settings)
@@ -183,7 +185,7 @@ def api_target():
 
 @bp.route('/test_jsons', methods=['POST'])
 def test_jsons():
-    data = jsons.loads(request.data, actions.NotificationChannelOverride)
+    data = jsons.loads(request.data, NotificationChannelOverride)
     return jsons.dumps(data), 200
 
 
