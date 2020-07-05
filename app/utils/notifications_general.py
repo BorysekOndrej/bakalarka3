@@ -9,7 +9,7 @@ from loguru import logger
 
 import config
 import app.utils.db_utils as db_utils
-from app.actions import merge_dict_by_strategy, get_effective_notification_settings
+from app.utils.notifications_settings import get_effective_active_notification_settings
 
 
 class Channels (Enum):
@@ -106,7 +106,7 @@ def make_dict_notification_settings_by_scan_order_id(main_data):
         user_id = single_res.ScanOrder.user_id
         target_id = single_res.ScanOrder.target_id
 
-        notification_settings_by_scan_order_id[scan_order_id] = get_effective_notification_settings(user_id, target_id)
+        notification_settings_by_scan_order_id[scan_order_id] = get_effective_active_notification_settings(user_id, target_id)
 
     return notification_settings_by_scan_order_id
 
