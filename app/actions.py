@@ -1,8 +1,10 @@
+import copy
 import datetime
 import json
 from itertools import chain
 from typing import Optional, List, Dict, Tuple, Union
 
+import jsons
 from sqlalchemy import or_
 
 import app.scan_scheduler as scan_scheduler
@@ -16,6 +18,7 @@ import app.utils.sslyze_parse_result as sslyze_parse_result
 from config import FlaskConfig, SslyzeConfig
 import app.utils.sslyze_result_simplify as sslyze_result_simplify
 
+# warning: to the keys of the following dict are tied up values in DB. Do not change.
 CONNECTION_DB_MODELS_TYPES = {
     'slack': db_models.SlackConnections,
     'email': db_models.MailConnections
@@ -37,6 +40,24 @@ class NotificationChannelOverride(object):
     def normalize_attrs(self):
         self.force_disabled_ids = normalize_list_of_ids(self.force_disabled_ids)
         self.force_enabled_ids = normalize_list_of_ids(self.force_enabled_ids, exclude_ids=self.force_disabled_ids)
+
+
+def merge_notification_channel_overrides(a: NotificationChannelOverride, b: NotificationChannelOverride) -> NotificationChannelOverride:
+    new = copy.deepcopy(a)
+    if b.force_disable:
+        new.force_disable = b.force_disable
+    new.force_enabled_ids.extend(b.force_enabled_ids)
+    new.force_disabled_ids.extend(b.force_disabled_ids)
+    new.normalize_attrs()
+    return new
+
+
+class NotificationPreferences(object):
+    def __init__(self):
+        self.slack: NotificationChannelOverride = NotificationChannelOverride()
+        self.email: NotificationChannelOverride = NotificationChannelOverride()
+
+
 
 
 def get_target_definition_by_ids(target_ids: List[int], user_id: int) -> bool:
@@ -199,16 +220,12 @@ def merge_dict_by_strategy(more_general: dict, more_specific: dict) -> dict:
 def get_effective_notification_settings(user_id: int, target_id: int) -> Optional[dict]:
     # Todo: This is prime suspect for redis caching. Otherwise notification scheduler will be doing a coffin dance.
 
-    # warning: to the keys of the following dict are tied up values in DB. Do not change.
+    # warning: I'm editing live models, do NOT persis changes to DB.
     connection_lists = {}
-    for connection_name in CONNECTION_DB_MODELS_TYPES:
-        connection_lists[connection_name] = list_connections_of_type(CONNECTION_DB_MODELS_TYPES[connection_name], user_id)
-        for single_connection in connection_lists[connection_name]:
-            single_connection['enabled'] = True
-            if connection_name == 'email' and single_connection['validated'] == False:
-                single_connection['enabled'] = False
-                single_connection['notice'] = "Email connection can't be considered enabled until it's validated."
-            single_connection['preferences'] = {}
+    for single_channel_name in CONNECTION_DB_MODELS_TYPES:
+        connection_lists[single_channel_name] = list_connections_of_type(CONNECTION_DB_MODELS_TYPES[single_channel_name], user_id)
+        for single_connection in connection_lists[single_channel_name]:
+            single_connection['enabled'] = False
 
     query = db_models.db.session.query(db_models.ConnectionStatusOverrides) \
         .filter(db_models.ConnectionStatusOverrides.user_id == user_id)
@@ -219,15 +236,41 @@ def get_effective_notification_settings(user_id: int, target_id: int) -> Optiona
     else:
         query = query.filter(db_models.ConnectionStatusOverrides.target_id.is_(None))
     res = query.all()
+    res: List[db_models.ConnectionStatusOverrides]
 
+    final_override_preferences = NotificationPreferences()
     for single_override in chain(filter(lambda x: x.target_id is None, res),
                                  filter(lambda x: x.target_id is not None, res)):
-        single_override: db_models.ConnectionStatusOverrides
-        for single_connection in connection_lists[single_override.connection_type]:
-            if single_override.connection_id == single_connection["id"]:
-                single_connection["enabled"] = single_override.enabled
-                merge_dict_by_strategy(single_connection["preferences"], single_override.preferences)
-                break
+
+        override_preferences = jsons.loads(single_override.preferences, NotificationPreferences)
+        for single_channel_name in CONNECTION_DB_MODELS_TYPES:
+
+            if isinstance(getattr(override_preferences, single_channel_name), dict):
+                # This is workaround for a bug in jsons library, when recursive loading doesn't work perfectly.
+                # todo: remove when no longer neccesary.
+                setattr(override_preferences, single_channel_name, jsons.load(getattr(override_preferences, single_channel_name), NotificationChannelOverride))
+
+            setattr(final_override_preferences, single_channel_name,
+                    merge_notification_channel_overrides(getattr(final_override_preferences, single_channel_name),
+                                                         getattr(override_preferences, single_channel_name)))
+
+    for single_channel_name in CONNECTION_DB_MODELS_TYPES:
+        for single_connection in connection_lists[single_channel_name]:
+            single_connection: dict
+            override_for_single_channel: NotificationChannelOverride = getattr(final_override_preferences, single_channel_name)
+            if override_for_single_channel.force_disable:
+                single_connection["enabled"] = False
+                continue
+            if single_connection["id"] in override_for_single_channel.force_disabled_ids:
+                single_connection["enabled"] = False
+                continue
+            if single_connection["id"] in override_for_single_channel.force_enabled_ids:
+                single_connection["enabled"] = True
+
+    for single_connection in connection_lists['email']:
+        if single_connection['validated'] is False:
+            single_connection['enabled'] = False
+            single_connection['notice'] = "Email connection can't be considered enabled until it's validated."
 
     return connection_lists
 

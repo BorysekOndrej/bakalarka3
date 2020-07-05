@@ -85,16 +85,6 @@ def api_target_by_id(target_id: int):
     return jsonify(actions.full_target_settings_to_dict(target, scan_order, notifications))
 
 
-def merge_notification_channel_overrides(a: actions.NotificationChannelOverride, b: actions.NotificationChannelOverride):
-    new = copy.deepcopy(a)
-    if b.force_disable:
-        new.force_disable = b.force_disable
-    new.force_enabled_ids.extend(b.force_enabled_ids)
-    new.force_disabled_ids.extend(b.force_disabled_ids)
-    new.normalize_attrs()
-    return new
-
-
 def additional_channel_email_actions(email_pref: dict, user_id: int) -> bool:
     ADD_NEW_EMAILS_FIELD = "add_new_emails"
 
