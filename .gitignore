@@ -2,12 +2,12 @@
 
 test.json
 *.out.json
-db/
-tmp/
-.venv/
-.venv37/
-.venv38/
-.venvLinux/
+/db/
+/tmp/
+/.venv/
+/.venv37/
+/.venv38/
+/.venvLinux/
 
 # Created by https://www.gitignore.io/api/git,pycharm,visualstudio,visualstudiocode
 # Edit at https://www.gitignore.io/?templates=git,pycharm,visualstudio,visualstudiocode
