@@ -477,3 +477,9 @@ def debug_url_map():
     # b = flask.url_for("apiDebug.mail_validate", db_code="teasd", _external=True)
     return str(a)
 
+
+@bp.route('/current_app', methods=['GET'])
+def current_app():
+    a = flask.current_app
+    return str(a)
+
