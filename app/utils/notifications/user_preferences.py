@@ -106,7 +106,12 @@ def get_all_relevant_notification_overrides(user_id: int, target_id: Optional[in
 
 
 def load_preferences_from_string(pref: str) -> NotificationPreferences:
-    pref_obj: NotificationPreferences = jsons.loads(pref, NotificationPreferences)
+    try:
+        pref_obj: NotificationPreferences = jsons.loads(pref, NotificationPreferences)
+    except Exception as e:
+        logger.warning(f'Invalid notification pref: {e}. Returning empty.')
+        return NotificationPreferences()
+
     for single_channel_name in CONNECTION_DB_MODELS_TYPES:
 
         if isinstance(getattr(pref_obj, single_channel_name), dict):
@@ -123,7 +128,7 @@ def merge_notifications_overrides_to_one(res: List[db_models.ConnectionStatusOve
     for single_override in chain(filter(lambda x: x.target_id is None, res),
                                  filter(lambda x: x.target_id is not None, res)):
 
-        override_preferences = load_preferences_from_string(single_override.preferences, NotificationPreferences)
+        override_preferences = load_preferences_from_string(single_override.preferences)
 
         for single_channel_name in CONNECTION_DB_MODELS_TYPES:
             setattr(final_override_preferences, single_channel_name,
