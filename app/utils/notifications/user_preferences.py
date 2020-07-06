@@ -105,22 +105,31 @@ def get_all_relevant_notification_overrides(user_id: int, target_id: Optional[in
     return res
 
 
+def load_preferences_from_string(pref: str) -> NotificationPreferences:
+    pref_obj: NotificationPreferences = jsons.loads(pref, NotificationPreferences)
+    for single_channel_name in CONNECTION_DB_MODELS_TYPES:
+
+        if isinstance(getattr(pref_obj, single_channel_name), dict):
+            # This is workaround for a bug in jsons library, when recursive loading doesn't work perfectly.
+            # todo: remove when no longer neccesary.
+            setattr(pref_obj, single_channel_name,
+                    jsons.load(getattr(pref_obj, single_channel_name), NotificationChannelOverride))
+
+    return pref_obj
+
+
 def merge_notifications_overrides_to_one(res: List[db_models.ConnectionStatusOverrides]) -> db_models.ConnectionStatusOverrides:
     final_override_preferences = NotificationPreferences()
     for single_override in chain(filter(lambda x: x.target_id is None, res),
                                  filter(lambda x: x.target_id is not None, res)):
 
-        override_preferences = jsons.loads(single_override.preferences, NotificationPreferences)
+        override_preferences = load_preferences_from_string(single_override.preferences, NotificationPreferences)
+
         for single_channel_name in CONNECTION_DB_MODELS_TYPES:
-
-            if isinstance(getattr(override_preferences, single_channel_name), dict):
-                # This is workaround for a bug in jsons library, when recursive loading doesn't work perfectly.
-                # todo: remove when no longer neccesary.
-                setattr(override_preferences, single_channel_name, jsons.load(getattr(override_preferences, single_channel_name), NotificationChannelOverride))
-
             setattr(final_override_preferences, single_channel_name,
                     merge_notification_channel_overrides(getattr(final_override_preferences, single_channel_name),
                                                          getattr(override_preferences, single_channel_name)))
+
     return final_override_preferences
 
 
