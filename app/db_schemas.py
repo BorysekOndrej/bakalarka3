@@ -5,7 +5,7 @@ from marshmallow_sqlalchemy import SQLAlchemyAutoSchema, SQLAlchemySchema, auto_
 from marshmallow_sqlalchemy.fields import Nested
 import sslyze.ssl_settings
 
-import app.db_models
+import app.db_models as db_models
 
 
 def get_array_reschemed(model_cls, schema_cls, ids: str, many: bool = True):
@@ -22,7 +22,7 @@ class BaseSchema(SQLAlchemySchema):
 
 class TargetSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.Target
+        model = db_models.Target
         exclude = ()
         unknown = EXCLUDE  # todo: sort this out
 
@@ -34,12 +34,12 @@ class TargetSchema(SQLAlchemyAutoSchema):
 
 class UserSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.User
+        model = db_models.User
 
 
 class ScanOrderSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.ScanOrder
+        model = db_models.ScanOrder
         include_relationships = True
         include_fk = True  # this needs to be enabled for schema.load to work properly
 
@@ -49,22 +49,22 @@ class ScanOrderSchema(SQLAlchemyAutoSchema):
 
 class CipherSuiteSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.CipherSuite
+        model = db_models.CipherSuite
 
 
 class TrustStoreSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.TrustStore
+        model = db_models.TrustStore
 
 
 class CertificateSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.Certificate
+        model = db_models.Certificate
 
 
 class ServerInfoSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.ServerInfo
+        model = db_models.ServerInfo
         include_relationships = True
 
     openssl_cipher_string_supported = Nested(CipherSuiteSchema)
@@ -72,17 +72,17 @@ class ServerInfoSchema(SQLAlchemyAutoSchema):
 
 class RejectedCipherHandshakeErrorMessageSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.RejectedCipherHandshakeErrorMessage
+        model = db_models.RejectedCipherHandshakeErrorMessage
 
 
 class AcceptedCipherPostHandshakeResponseSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.AcceptedCipherPostHandshakeResponse
+        model = db_models.AcceptedCipherPostHandshakeResponse
 
 
 class RejectedCipherSuiteSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.RejectedCipherSuite
+        model = db_models.RejectedCipherSuite
         include_relationships = True
 
     ciphersuite = Nested(CipherSuiteSchema)
@@ -91,7 +91,7 @@ class RejectedCipherSuiteSchema(SQLAlchemyAutoSchema):
 
 class AcceptedCipherSuiteSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.AcceptedCipherSuite
+        model = db_models.AcceptedCipherSuite
         include_relationships = True
 
     ciphersuite = Nested(CipherSuiteSchema)
@@ -100,63 +100,63 @@ class AcceptedCipherSuiteSchema(SQLAlchemyAutoSchema):
 
 class TLS13EarlyDataSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.TLS13EarlyData
+        model = db_models.TLS13EarlyData
 
 
 class SessionRenegotiationSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.SessionRenegotiation
+        model = db_models.SessionRenegotiation
 
 
 class DeflateCompressionSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.DeflateCompression
+        model = db_models.DeflateCompression
 
 
 class OpenSSLHeartbleedSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.OpenSSLHeartbleed
+        model = db_models.OpenSSLHeartbleed
 
 
 class OpenSSLCCSInjectionSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.OpenSSLCCSInjection
+        model = db_models.OpenSSLCCSInjection
 
 
 class DowngradeAttackSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.DowngradeAttack
+        model = db_models.DowngradeAttack
 
 
 class ROBOTAttackSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.ROBOTAttack
+        model = db_models.ROBOTAttack
 
 
 class TLS12SessionResumptionRateSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.TLS12SessionResumptionRate
+        model = db_models.TLS12SessionResumptionRate
 
 
 class TLS12SessionResumptionSupportSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.TLS12SessionResumptionSupport
+        model = db_models.TLS12SessionResumptionSupport
 
 
 class CertificateChainSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.CertificateChain
+        model = db_models.CertificateChain
 
     certificate_chain = fields.Method("get_chain")
 
     @staticmethod
     def get_chain(obj):
-        return get_array_reschemed(app.db_models.Certificate, CertificateSchema, obj.chain)
+        return get_array_reschemed(db_models.Certificate, CertificateSchema, obj.chain)
 
 
 class HTTPSecurityHeadersSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.HTTPSecurityHeaders
+        model = db_models.HTTPSecurityHeaders
 
         include_relationships = True
 
@@ -165,23 +165,23 @@ class HTTPSecurityHeadersSchema(SQLAlchemyAutoSchema):
 
 class OCSPResponseSingleSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.OCSPResponseSingle
+        model = db_models.OCSPResponseSingle
 
 
 class OCSPResponseSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.OCSPResponse
+        model = db_models.OCSPResponse
 
     responses_list = fields.Method("get_responses")
 
     @staticmethod
     def get_responses(obj):
-        return get_array_reschemed(app.db_models.OCSPResponseSingle, OCSPResponseSingleSchema, obj.responses_list)
+        return get_array_reschemed(db_models.OCSPResponseSingle, OCSPResponseSingleSchema, obj.responses_list)
 
 
 class CertificateInformationSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.CertificateInformation
+        model = db_models.CertificateInformation
         include_relationships = True
 
     ocsp_response = Nested(OCSPResponseSchema)
@@ -193,16 +193,16 @@ class CertificateInformationSchema(SQLAlchemyAutoSchema):
 
     @staticmethod
     def get_validation_result(obj):
-        return get_array_reschemed(app.db_models.ValidatedPath, ValidatedPathScheme, obj.path_validation_result_list)
+        return get_array_reschemed(db_models.ValidatedPath, ValidatedPathScheme, obj.path_validation_result_list)
 
     @staticmethod
     def get_validation_error(obj):
-        return get_array_reschemed(app.db_models.ValidatedPath, ValidatedPathScheme, obj.path_validation_error_list)
+        return get_array_reschemed(db_models.ValidatedPath, ValidatedPathScheme, obj.path_validation_error_list)
 
 
 class ValidatedPathScheme(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.ValidatedPath
+        model = db_models.ValidatedPath
         include_relationships = True
 
     trust_store = Nested(TrustStoreSchema)
@@ -211,7 +211,7 @@ class ValidatedPathScheme(SQLAlchemyAutoSchema):
 
 class CipherSuiteScanResultSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.CipherSuiteScanResult
+        model = db_models.CipherSuiteScanResult
         include_relationships = True
 
     preferred_cipher = Nested(AcceptedCipherSuiteSchema)
@@ -222,30 +222,30 @@ class CipherSuiteScanResultSchema(SQLAlchemyAutoSchema):
 
     @staticmethod
     def get_accepted(obj):
-        return get_array_reschemed(app.db_models.AcceptedCipherSuite, AcceptedCipherSuiteSchema,
+        return get_array_reschemed(db_models.AcceptedCipherSuite, AcceptedCipherSuiteSchema,
                                    obj.accepted_cipher_list)
 
     @staticmethod
     def get_rejected(obj):
-        return get_array_reschemed(app.db_models.RejectedCipherSuite, RejectedCipherSuiteSchema,
+        return get_array_reschemed(db_models.RejectedCipherSuite, RejectedCipherSuiteSchema,
                                    obj.rejected_cipher_list)
 
     @staticmethod
     def get_errored(obj):
-        return get_array_reschemed(app.db_models.CipherSuite, CipherSuiteSchema,
+        return get_array_reschemed(db_models.CipherSuite, CipherSuiteSchema,
                                    obj.errored_cipher_list)  # todo: check ErroredCipherSuite
 
 
 class ScanResultsForeignKeysOnlySchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.ScanResults
+        model = db_models.ScanResults
         include_relationships = False
         include_fk = True
 
 
 class ScanResultsSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.ScanResults
+        model = db_models.ScanResults
         include_relationships = True
 
     server_info = Nested(ServerInfoSchema)
@@ -270,7 +270,7 @@ class ScanResultsSchema(SQLAlchemyAutoSchema):
 
 class ScanResultsHistorySchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.ScanResultsHistory
+        model = db_models.ScanResultsHistory
         include_relationships = False
         include_fk = True
 
@@ -280,7 +280,7 @@ class ScanResultsHistorySchema(SQLAlchemyAutoSchema):
 
 class LastScanSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.LastScan
+        model = db_models.LastScan
         include_relationships = False
         include_fk = True
 
@@ -290,7 +290,7 @@ class LastScanSchema(SQLAlchemyAutoSchema):
 
 class ScanResultsSimplifiedSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.ScanResultsSimplified
+        model = db_models.ScanResultsSimplified
         include_relationships = False
         include_fk = True
         exclude = ()
@@ -301,13 +301,13 @@ class ScanResultsSimplifiedSchema(SQLAlchemyAutoSchema):
 
     @staticmethod
     def get_verified_chains(obj):
-        return get_array_reschemed(app.db_models.CertificateChain, CertificateChainSchema,
+        return get_array_reschemed(db_models.CertificateChain, CertificateChainSchema,
                                    obj.verified_certificate_chains_lists_ids)
 
 
 class SlackConnectionsSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.SlackConnections
+        model = db_models.SlackConnections
         include_relationships = False
         include_fk = True  # this needs to be enabled for schema.load to work properly
 
@@ -316,7 +316,7 @@ class SlackConnectionsSchema(SQLAlchemyAutoSchema):
 
 class MailConnectionsSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.MailConnections
+        model = db_models.MailConnections
         include_relationships = False
         include_fk = True  # this needs to be enabled for schema.load to work properly
 
@@ -325,7 +325,7 @@ class MailConnectionsSchema(SQLAlchemyAutoSchema):
 
 class ConnectionStatusOverridesSchema(SQLAlchemyAutoSchema):
     class Meta(BaseSchema.Meta):
-        model = app.db_models.ConnectionStatusOverrides
+        model = db_models.ConnectionStatusOverrides
         include_relationships = True
         include_fk = True  # this needs to be enabled for schema.load to work properly
 
