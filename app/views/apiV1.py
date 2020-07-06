@@ -15,7 +15,7 @@ import app.utils.sslyze.simplify_result as sslyze_result_simplify
 from config import FlaskConfig
 from app.utils.notifications.user_preferences import get_effective_notification_settings, \
     get_effective_active_notification_settings, NotificationChannelOverride, \
-    filter_ids_of_notification_settings_user_can_see, mail_add
+    filter_ids_of_notification_settings_user_can_see, mail_add, NotificationPreferences, load_preferences_from_string
 
 bp = Blueprint('apiV1', __name__)
 
@@ -504,6 +504,30 @@ def api_get_basic_cert_info_for_target(target_id):
             'leaf_subject': list_cert.subject,
             'information_fetched_on': last_scanned_datetime
             }, 200
+
+
+@bp.route('/notification_settings_raw', methods=['GET'])
+@bp.route('/notification_settings_raw/undefined', methods=['GET'])
+@bp.route('/notification_settings_raw/null', methods=['GET'])
+@bp.route('/notification_settings_raw/<int:target_id>', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def api_notification_settings_raw(user_id=None, target_id=None):
+    if user_id is None:
+        user_id = authentication_utils.get_user_id_from_current_jwt()
+
+    if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
+        return "Target either doesn't exist or user is not allowed to see it.", 401
+
+    res = db_models.db.session \
+        .query(db_models.ConnectionStatusOverrides) \
+        .filter(db_models.ConnectionStatusOverrides.user_id == user_id) \
+        .filter(db_models.ConnectionStatusOverrides.target_id == target_id) \
+        .first()
+
+    pref = res.preferences if res else ""
+    res2 = load_preferences_from_string(pref)
+
+    return jsons.dumps(res2), 200
 
 
 @bp.route('/notification_settings', methods=['GET'])
