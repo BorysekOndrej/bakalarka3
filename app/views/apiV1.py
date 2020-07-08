@@ -10,13 +10,14 @@ from sqlalchemy.orm.exc import NoResultFound
 
 import app.object_models as object_models
 import app.utils.ct_search as ct_search
+import app.utils.randomCodes as randomCodes
 import app.utils.sslyze.simplify_result as sslyze_result_simplify
 
 from config import FlaskConfig
 from app.utils.notifications.user_preferences import get_effective_notification_settings, \
     get_effective_active_notification_settings, NotificationChannelOverride, \
     filter_ids_of_notification_settings_user_can_see, mail_add, load_preferences_from_string, \
-    CONNECTION_DB_MODELS_TYPES
+    CONNECTION_DB_MODELS_TYPES, send_mail_validation
 
 bp = Blueprint('apiV1', __name__)
 
@@ -653,3 +654,41 @@ def api_change_password():
     db_models.db.session.commit()
 
     return "ok", 200
+
+
+@bp.route('/send_validation_email', methods=['POST'])
+@flask_jwt_extended.jwt_required
+def api_resend_validation_email():
+    user_id = authentication_utils.get_user_id_from_current_jwt()
+    REQUEST_ERROR_MSG = "Request failed. Possible reasons:\n" \
+                   "- Validation email to this email address was send less then 1 minute ago.\n"\
+                   "- User did not register this email address, so there is nothing to validate.\n"
+
+    email_to_resend_validation_email_to = json.loads(request.data).get("email", "").strip()
+    if len(email_to_resend_validation_email_to) == 0:
+        return "No email argument provided. Aborting.", 400
+
+    res = db_models.db.session \
+        .query(db_models.TmpRandomCodes) \
+        .filter(db_models.TmpRandomCodes.user_id == user_id) \
+        .filter(db_models.TmpRandomCodes.activity == randomCodes.ActivityType.MAIL_VALIDATION.name) \
+        .filter(db_models.TmpRandomCodes.timestamp >
+                db_models.datetime_to_timestamp(datetime.datetime.now() - datetime.timedelta(minutes=1))) \
+        .all()
+
+    if res is not None:
+        for x in res:
+            if x.params == email_to_resend_validation_email_to:
+                return REQUEST_ERROR_MSG, 400
+
+    res = db_models.db.session \
+        .query(db_models.MailConnections) \
+        .filter(db_models.MailConnections.user_id == user_id) \
+        .filter(db_models.MailConnections.email == email_to_resend_validation_email_to) \
+        .first()
+
+    if res is None:
+        return REQUEST_ERROR_MSG, 400
+
+    send_mail_validation(user_id, email_to_resend_validation_email_to)
+    return f'ok', 200
