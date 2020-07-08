@@ -655,6 +655,22 @@ def api_change_password():
     return "ok" if change_ok else "fail", 200 if change_ok else 400
 
 
+@bp.route('/user', methods=['GET'])
+@flask_jwt_extended.jwt_required
+def api_get_user_profile():
+    user_id = authentication_utils.get_user_id_from_current_jwt()
+
+    res: db_models.User = db_models.db.session \
+        .query(db_models.User) \
+        .get(user_id)
+
+    return jsons.dumps({
+        "username": res.username,
+        "main_api_key": res.main_api_key,
+        "email": res.email
+    }), 200
+
+
 # security: place stricter rate limit
 @bp.route('/user/reset_password', methods=['POST'])
 def api_reset_password():
