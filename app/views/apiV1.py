@@ -692,3 +692,25 @@ def api_resend_validation_email():
 
     send_mail_validation(user_id, email_to_resend_validation_email_to)
     return f'ok', 200
+
+
+@bp.route('/channel_connection/<string:channel_name>/<string:channel_id>', methods=['DELETE'])
+@flask_jwt_extended.jwt_required
+def api_channel_connection_delete(channel_name: str, channel_id: int):
+    user_id = authentication_utils.get_user_id_from_current_jwt()
+    try:
+        channel_db_model = CONNECTION_DB_MODELS_TYPES[channel_name]
+    except KeyError:
+        return "This channel doesn't exist.", 400
+
+    existing_connection = db_models.db.session \
+        .query(channel_db_model) \
+        .filter(channel_db_model.user_id == user_id) \
+        .filter(channel_db_model.id == channel_id) \
+        .first()
+
+    if existing_connection:
+        db_models.db.session.delete(existing_connection)
+        db_models.db.session.commit()
+
+    return 'ok', 200
