@@ -102,7 +102,7 @@ class SlackConfig(object):
     client_secret = os.environ["SLACK_CLIENT_SECRET"]
     oauth_scope = os.environ["SLACK_BOT_SCOPE"]
 
-    local_post_install_url = "http://bakalarka3.borysek:5000/api/debug/slack/auth_callback"
+    local_post_install_url = os.environ.get("SLACK_POST_INSTALL_URL", None) or "http://bakalarka3.borysek:5000/api/debug/slack/auth_callback"
     slack_endpoint_url = f"https://slack.com/oauth/v2/authorize?scope={ oauth_scope }&client_id={ client_id }&redirect_uri={ local_post_install_url }"
 
     check_refresh_cookie_on_callback_endpoint = False  # might cause problems with APIs
