@@ -18,6 +18,8 @@ from app.utils.notifications.user_preferences import get_effective_notification_
     get_effective_active_notification_settings, NotificationChannelOverride, \
     filter_ids_of_notification_settings_user_can_see, mail_add, load_preferences_from_string, \
     CONNECTION_DB_MODELS_TYPES, send_mail_validation
+import app.utils.notifications.send as notifications_send
+
 
 bp = Blueprint('apiV1', __name__)
 
@@ -627,15 +629,21 @@ def api_ct_get_subdomains(domain):
 
 # security: place stricter rate limit
 @bp.route('/user/change_password', methods=['POST'])
+@flask_jwt_extended.jwt_required
 def api_change_password():
     if not request.is_json:
         return jsonify({"msg": "Missing JSON in request"}), 400
 
-    username = request.json.get('username', None)
+    user_id = authentication_utils.get_user_id_from_current_jwt()
+
     old_password = request.json.get('old_password', None)
     new_password = request.json.get('new_password', None)
 
-    login_msg, login_status_code = action_login(username, old_password)
+    res: db_models.User = db_models.db.session \
+        .query(db_models.User) \
+        .get(user_id)
+
+    login_msg, login_status_code = action_login(res.username, old_password)
     if login_status_code != 200:
         return login_msg, login_status_code
 
@@ -643,17 +651,55 @@ def api_change_password():
         return jsonify(
             {"msg": "Missing new password parameter."}), 400  # todo: consider concatenating with other error msgs
 
-    # todo: consider password uniqueness validation
+    change_ok = authentication_utils.set_user_password(res.id, new_password)
+    return "ok" if change_ok else "fail", 200 if change_ok else 400
+
+
+# security: place stricter rate limit
+@bp.route('/user/reset_password', methods=['POST'])
+def api_reset_password():
+    if not request.is_json:
+        return jsonify({"msg": "Missing JSON in request"}), 400
+
+    db_code = request.json.get('db_code', None)
+    new_password = request.json.get('new_password', None)
+
+    is_code_valid, msg_or_res = randomCodes.validate_code(db_code, randomCodes.ActivityType.PASSWORD_RESET)
+
+    if not is_code_valid:
+        msg: str = msg_or_res
+        return msg, 400
+
+    res: db_models.TmpRandomCodes = msg_or_res
+
+    if new_password is None or len(new_password) == 0:
+        return jsonify(
+            {"msg": "Missing new password parameter."}), 400  # todo: consider concatenating with other error msgs
+
+    change_ok = authentication_utils.set_user_password(res.id, new_password)
+    return "ok" if change_ok else "fail", 200 if change_ok else 400
+
+
+@bp.route('/user/send_password_reset_email', methods=['POST'])
+def api_send_password_reset_email():
+    email_to_resend_validation_email_to = json.loads(request.data).get("email", "").strip()
+    if len(email_to_resend_validation_email_to) == 0:
+        return "No email argument provided. Aborting.", 400
 
     res = db_models.db.session \
         .query(db_models.User) \
-        .filter(db_models.User.username == username) \
+        .filter(db_models.User.email == email_to_resend_validation_email_to) \
         .first()
-    res.password_hash = authentication_utils.generate_password_hash(new_password)
 
-    db_models.db.session.commit()
+    if res is not None:
+        db_code = randomCodes.create_and_save_random_code(randomCodes.ActivityType.PASSWORD_RESET, res.id, 30)
+        validation_url = f'LINK TO UI; {db_code}'  # todo: link to UI
 
-    return "ok", 200
+        notifications_send.email_send_msg(email_to_resend_validation_email_to,
+                                          validation_url,
+                                          "Password reset for TLSInventory")
+
+    return f'If email address belongs to existing user than an password reset email was sent to it.', 200
 
 
 @bp.route('/send_validation_email', methods=['POST'])

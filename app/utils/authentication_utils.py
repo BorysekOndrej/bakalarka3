@@ -4,7 +4,6 @@ import flask_jwt_extended
 from flask_jwt_extended import JWTManager
 from werkzeug.security import generate_password_hash, check_password_hash
 # werkzeug.security provides salting internally, which is amazing
-
 import config
 
 jwt_instance = JWTManager()
@@ -43,3 +42,17 @@ def jwt_refresh_token_if_check_enabled(condition):
             return flask_jwt_extended.jwt_refresh_token_required(func)
         return func
     return decorator
+
+
+def set_user_password(user_id: int, password: str) -> bool:
+    import app.db_models as db_models
+    res = db_models.db.session \
+        .query(db_models.User) \
+        .get(user_id)
+
+    # todo: consider password uniqueness validation
+
+    res.password_hash = generate_password_hash(password)
+    db_models.db.session.commit()
+
+    return True

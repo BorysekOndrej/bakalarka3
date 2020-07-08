@@ -2,7 +2,7 @@ import datetime
 import string
 from enum import Enum
 import random
-import itertools
+from typing import Union, Tuple
 
 import app.db_models as db_models
 
@@ -10,6 +10,7 @@ import app.db_models as db_models
 class ActivityType(Enum):
     SLACK = 1
     MAIL_VALIDATION = 2
+    PASSWORD_RESET = 3
 
 
 def gen_random_code(n=16):
@@ -31,12 +32,13 @@ def create_and_save_random_code(activity: ActivityType, user_id: int, expire_in_
     return res.code
 
 
-def validate_code(db_code: str, activity: ActivityType, user_id=None):
+def validate_code(db_code: str, activity: ActivityType, user_id=None)\
+        -> Union[Tuple[bool, str], Tuple[bool, db_models.TmpRandomCodes]]:
     query = db_models.db.session \
         .query(db_models.TmpRandomCodes) \
         .filter(db_models.TmpRandomCodes.code == db_code) \
         .filter(db_models.TmpRandomCodes.activity == activity.name) \
-        .filter(db_models.TmpRandomCodes.expires >= db_models.datetime_to_timestamp(datetime.datetime.now())) \
+        .filter(db_models.TmpRandomCodes.expires >= db_models.datetime_to_timestamp(datetime.datetime.now()))
 
     if user_id:
         query = query.\
@@ -44,7 +46,7 @@ def validate_code(db_code: str, activity: ActivityType, user_id=None):
 
     res: db_models.TmpRandomCodes = query.first()
 
-    db_models.logger.warning(res)
+    db_models.logger.warning(f'TmpRandomCode obj {res}')
 
     if res is None:
         msg = """Code either:
