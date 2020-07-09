@@ -887,3 +887,24 @@ class ConnectionStatusOverrides(Base, UniqueModel):
         }
     }
     """
+
+
+# This might not yet work properly. todo: fix it
+class PlainTextNotification(Base):
+    # This will be used for notifications in UI and RSS.
+    __tablename__ = 'plaintextnotifications'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), index=True)
+    user = db.relationship("User")
+
+    target_id = db.Column(db.Integer, db.ForeignKey('targets.id'), nullable=True)
+    target = db.relationship("Target")
+
+    channel = db.Column(db.String, default="all")
+
+    event_id = db.Column(db.String)
+    notification_id = db.Column(db.String, unique=True)  # notification_id should be globally unique, not only in channel
+    msg = db.Column(db.JSON)
+
