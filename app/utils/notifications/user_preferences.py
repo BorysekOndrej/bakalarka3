@@ -106,6 +106,8 @@ def get_all_relevant_notification_overrides(user_id: int, target_id: Optional[in
 
 
 def load_preferences_from_string(pref: str) -> NotificationPreferences:
+    if len(pref) == 0:
+        return NotificationPreferences()
     try:
         pref_obj: NotificationPreferences = jsons.loads(pref, NotificationPreferences)
     except Exception as e:
