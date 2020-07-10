@@ -13,7 +13,7 @@ import os
 
 def file_module_string_from_path():
     file_path = os.path.abspath(__file__)
-    cwd_path = os.getcwd()
+    cwd_path = f'{os.getcwd()}/'
     # print(f'file path {file_path}')
     # print(f'cwd path {cwd_path}')
     module_path_string = file_path[:].replace(cwd_path, "").replace("/", ".").replace(".py", "")
