@@ -54,7 +54,8 @@ def qry_scan_base():
     date_offseted = default_enqueued_offseted_timestamp()
     return db.session.query(db_models.ScanOrderMinimal.id) \
         .filter(db_models.LastScan.id == db_models.ScanOrderMinimal.id) \
-        .filter(db_models.LastScan.last_enqueued < date_offseted)
+        .filter((db_models.LastScan.last_enqueued < date_offseted) |
+                (db_models.LastScan.last_enqueued.is_(None)))
 
 
 def qry_first_scan():
