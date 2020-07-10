@@ -61,8 +61,9 @@ def sslyze_scan(twe: List[object_models.TargetWithExtra]) -> Dict:
 
 
 def sslyze_enqueue_waiting_scans():
-    if FlaskConfig.REMOTE_COLLECTOR:
+    if FlaskConfig.REMOTE_COLLECTOR_GET_ALSO_WORK_OVER_HTTP:
         # todo: get from collector
+        logger.error("sslyze_enqueue_waiting_scans called with FlaskConfig.REMOTE_COLLECTOR_GET_WORK_OVER_HTTP enabled. This is currently not implemented.")
         pass
     else:
         twe = scan_scheduler.get_batch_to_scan()
