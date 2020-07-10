@@ -33,8 +33,10 @@ def redis_sslyze_enqueu(ntwe_json_string: str) -> str:
     from flask import current_app
     queue: rq.queue = current_app.sslyze_task_queue
     module_and_function_string = 'app.utils.sslyze.background_redis.redis_sslyze_scan_domains_to_json'
-    if file_module_string_from_path() not in module_and_function_string:
-        logger.warning(f"The background_redis static string is not equal to the expected one. {module_and_function_string}, {file_module_string_from_path}")
+    expected_module_string = file_module_string_from_path()
+    if expected_module_string not in module_and_function_string:
+        logger.warning("The background_redis static string is not equal to the expected one.\n"
+            f"{module_and_function_string}\n{expected_module_string}")
 
     job: rq.job = queue.enqueue(module_and_function_string, ntwe_json_string)
     return job.get_id()
