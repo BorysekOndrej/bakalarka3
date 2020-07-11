@@ -47,7 +47,7 @@ def get_target_from_id_if_user_can_see(target_id: int, user_id: int) -> Optional
     return get_target_from_id(target_id)
 
 
-def sslyze_scan(twe: List[object_models.TargetWithExtra]) -> Dict:
+def sslyze_scan(twe: List[object_models.TargetWithExtra], save_result=True) -> Dict:
     if FlaskConfig.REDIS_ENABLED:
         ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
         ntwe_json_string = json.dumps(ntwe_json_list)
@@ -56,9 +56,10 @@ def sslyze_scan(twe: List[object_models.TargetWithExtra]) -> Dict:
         return {'results_attached': False,
                 'backgroud_job_id': sslyze_background_redis.redis_sslyze_enqueu(ntwe_json_string)}
 
-    list_of_results_as_json: List[str] = sslyze_scanner.scan_domains_to_json(twe)
+    list_of_results_as_json = sslyze_scanner.scan_domains_to_arr_of_dicts(twe)
     answer = {'results_attached': True, 'results': list_of_results_as_json}
-    sensor_collector.sslyze_save_scan_results(answer)
+    if save_result:
+        sensor_collector.sslyze_save_scan_results(answer)
     return answer
 
 

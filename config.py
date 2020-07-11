@@ -4,6 +4,8 @@ import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
+# warning: Do not set env vars to False, rather unset them.
+
 
 class ServerLocation(object):
     address = '0.0.0.0'
@@ -96,6 +98,8 @@ class SslyzeConfig(object):
     asynchronous_scanning = False
     save_results_also_to_tmp_files = True
     soft_fail_on_result_parse_fail = True
+
+    cert_scan_only = FlaskConfig.DEBUG  # todo: disable but don't remove the option. Usefull in debug
 
 
 class CacheConfig(object):

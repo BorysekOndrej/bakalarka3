@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import json
 from typing import List
 
@@ -49,3 +50,9 @@ class TargetWithExtraSchema(marshmallow.Schema):
     extra = marshmallow.fields.Dict(missing=dict())
     # todo: add validation to TargetWithExtraSchema. The validation can't use DB as it's also used on sensor.
     # todo: I'm not sure how to do SQLAlchemySchema without table and regular marshmallow.Schema doesn't support transient param.
+
+
+@dataclass
+class ScanResultResponse(object):
+    results: List[dict]
+    results_attached: bool

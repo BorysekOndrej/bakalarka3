@@ -1,3 +1,4 @@
+import copy
 import os
 from hashlib import sha256
 
@@ -293,10 +294,12 @@ def calculate_and_insert_scan_result_simplified_into_db(scan_result: db_models.S
     )
 
 
-def insert_scan_result_into_db(scan_result: dict) -> app.db_models.ScanResults:
+def insert_scan_result_into_db(scan_result_orig: dict) -> app.db_models.ScanResults:
     obj = app.db_models.ScanResults()
 
-    target_dict = json.loads(scan_result.get("target", "{}"))
+    scan_result = copy.deepcopy(scan_result_orig)
+
+    target_dict = scan_result.get("target", {})
     target = object_models.TargetWithExtra.transient_from_dict(target_dict)
 
     if SslyzeConfig.save_results_also_to_tmp_files:

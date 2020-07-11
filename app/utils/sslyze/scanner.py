@@ -1,5 +1,7 @@
 import json
 
+import jsons
+import sslyze
 from sslyze import __version__ as sslyze_version
 
 from sslyze.concurrent_scanner import SynchronousScanner, ConcurrentScanner, PluginRaisedExceptionScanResult
@@ -9,6 +11,8 @@ from sslyze.cli.json_output import _CustomJsonEncoder
 
 from loguru import logger
 from typing import Dict, List
+
+import app.utils.files
 from config import SslyzeConfig
 
 import app.object_models as object_models
@@ -26,14 +30,26 @@ class ScanResult:
         self.server_info = None
         self.msg = ""
 
-    def make_json(self):
-        return json.dumps({
+    def make_dict(self) -> dict:
+        target_a: str = object_models.TargetWithExtraSchema().dumps(self.target)
+        target_b: dict = jsons.loads(target_a)
+
+        return {
             "success": self.success,  # todo
-            "target": object_models.TargetWithExtraSchema().dumps(self.target),
+            "target": target_b,
             "server_info": self.server_info,
             "results": self.plugin_results,
             "msg": self.msg
-        }, indent=3)
+        }
+
+    def make_json(self):
+        return self.make_json()
+
+    def make_json_string(self):
+        # this string doesn't look nice, but is valid because newlines are escaped
+        # app.utils.files.write_to_file("tmp/dump.json", jsons.dump(self.make_dict()))
+        # app.utils.files.write_to_file("tmp/dumps.json", jsons.dumps(self.make_dict()))
+        return jsons.dump(self.make_dict())
 
     def __repr__(self):
         return self.make_json()
@@ -54,6 +70,9 @@ def scan(targets: List[object_models.TargetWithExtra]) -> List[ScanResult]:
     logger.info(f"New scan initiated with sslyze version {sslyze_version} for target {targets}")
     plugins_repository = PluginsRepository()
     commands = plugins_repository.get_available_commands()
+
+    if SslyzeConfig.cert_scan_only:
+        commands = [sslyze.plugins.certificate_info_plugin.CertificateInfoScanCommand]  # sslyze.ScanCommand.CERTIFICATE_INFO
 
     domain_results = []
 
@@ -132,10 +151,13 @@ def scan_domain_to_json(target: object_models.TargetWithExtra) -> str:
 
 
 def scan_domains_to_json(targets: List[object_models.TargetWithExtra]) -> List[str]:
-    twe_list = scan(targets)
-    json_list = []
-    for twe in twe_list:
-        json_list.append(twe.make_json())
-    return json_list
+    return [jsons.dumps(x) for x in scan_domains_to_arr_of_dicts(targets)]
 
+
+def scan_domains_to_arr_of_dicts(targets: List[object_models.TargetWithExtra]) -> List[dict]:
+    scan_results = scan(targets)
+    dict_list = []
+    for single_scan_result in scan_results:
+        dict_list.append(single_scan_result.make_dict())
+    return dict_list
 
