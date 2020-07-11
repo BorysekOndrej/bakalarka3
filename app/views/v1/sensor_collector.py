@@ -1,7 +1,9 @@
 import json
 
+import jsons
 from sqlalchemy.orm.exc import NoResultFound
 
+import app.object_models as object_models
 from config import SensorCollector
 
 from . import bp
@@ -74,13 +76,8 @@ def api_sslyze_import_scan_results(sensor_key=None):
             f'Request to import scan results: unauthorized: key: {sensor_key}, IP: {request.remote_addr}')
         return 'Access only allowed with valid SENSOR_COLLECTOR_KEY or from localhost', 401
 
-    data = json.loads(request.data)
-    if not data.get('results_attached', False):
+    data = jsons.load(request.json, object_models.ScanResultResponse)
+    if not data.results_attached:
         return "No results attached flag", 400
-    data["results"] = json.loads(data.get("results", "[]"))
-    new_res = []
-    for x in data["results"]:
-        new_res.append(json.dumps(x))
-    data["results"] = new_res
-    sensor_collector.sslyze_save_scan_results(data)
+    sensor_collector.sslyze_save_scan_results_from_obj(data, comes_from_http=True)
     return "ok", 200
