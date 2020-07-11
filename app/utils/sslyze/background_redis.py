@@ -1,14 +1,12 @@
 import json
 
+import jsons
 from loguru import logger
 import redis
 import rq
-# from rq import get_current_job
 import app.actions.sensor_collector
 import app.object_models as object_models
 import app.utils.sslyze.scanner as sslyze_scanner
-import config
-import requests
 import os
 
 
@@ -45,15 +43,7 @@ def redis_sslyze_enqueu(ntwe_json_string: str) -> str:
 
 def redis_sslyze_scan_domains_to_json(domains_json: str) -> str:
     twe = object_models.load_json_to_targets_with_extra(domains_json)
-    res = sslyze_scanner.scan_domains_to_json(twe)
-    answers = []
-    for x in res:
-        answers.append(json.loads(x))
-    json_string = json.dumps(answers, indent=3)
-    redis_sent_results(json_string)
-    return json_string
-
-
-def redis_sent_results(results_json_string):
-    app.actions.sensor_collector.sslyze_save_scan_results({'results_attached': True, 'results': results_json_string})
-
+    list_of_results_as_json = sslyze_scanner.scan_domains_to_arr_of_dicts(twe)
+    answer = {'results_attached': True, 'results': list_of_results_as_json}
+    app.actions.sensor_collector.sslyze_save_scan_results(answer)
+    return jsons.dumps(answer)
