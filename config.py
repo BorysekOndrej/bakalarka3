@@ -8,6 +8,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 class ServerLocation(object):
     address = '0.0.0.0'
     port = 5000
+    PUBLIC_URL = os.environ.get('SERVER_PUBLIC_URL', 'http://example.com')
 
     # The correct determination of client IP is important for rate limiting of non-authenticated endpoints.
     # Remember that HTTP headers might be spoofed, unless nginx proxy whitelists origins.
@@ -23,7 +24,7 @@ class LogConfig(object):
 
 
 class FlaskConfig(object):
-    DEBUG = os.environ.get('DEBUG') or True
+    DEBUG = bool(os.environ.get('DEBUG', True))
     # SQLALCHEMY_DATABASE_URI = 'sqlite:////' + os.path.join(basedir, 'test.db') # todo: permission problem
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + '../db/test.db' + "?check_same_thread = False" if DEBUG else ""
 
@@ -53,21 +54,21 @@ class FlaskConfig(object):
 
     # JWT_SESSION_COOKIE = True
 
-    REDIS_ENABLED = os.environ.get('REDIS_ENABLED') or False
+    REDIS_ENABLED = bool(os.environ.get('REDIS_ENABLED', False))
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
 
 
 class SensorCollector(object):
     BASE_URL = os.environ.get('SENSOR_COLLECTOR_BASE_URL', 'http://flask:5000')
 
-    GET_WORK_OVER_HTTP = os.environ.get('SENSOR_COLLECTOR_GET_WORK_OVER_HTTP', False)
-    SEND_RESULTS_OVER_HTTP = os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_OVER_HTTP', False)
-    SEND_RESULTS_TO_LOCAL_DB = os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_TO_LOCAL_DB', True)
+    GET_WORK_OVER_HTTP = bool(os.environ.get('SENSOR_COLLECTOR_GET_WORK_OVER_HTTP', False))
+    SEND_RESULTS_OVER_HTTP = bool(os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_OVER_HTTP', False))
+    SEND_RESULTS_TO_LOCAL_DB = bool(os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_TO_LOCAL_DB', True))
 
     KEY = os.environ.get('SENSOR_COLLECTOR_KEY', None)  # key is not required when the data is comming from 127.0.0.1
     KEY_SKIP_FOR_LOCALHOST = True
 
-    REMOTE_COLLECTOR = os.environ.get('REMOTE_COLLECTOR') or False
+    REMOTE_COLLECTOR = bool(os.environ.get('REMOTE_COLLECTOR', False))
     REMOTE_COLLECTOR_GET_ALSO_WORK_OVER_HTTP = False  # Currently not implemented. todo:
 
 
@@ -112,7 +113,7 @@ class SlackConfig(object):
     client_secret = os.environ.get("SLACK_CLIENT_SECRET")
     oauth_scope = os.environ.get("SLACK_BOT_SCOPE")
 
-    local_post_install_url = os.environ.get("SLACK_POST_INSTALL_URL", None) or "http://bakalarka3.borysek:5000/api/debug/slack/auth_callback"
+    local_post_install_url = os.environ.get("SLACK_POST_INSTALL_URL", f'{ServerLocation.PUBLIC_URL}/api/debug/slack/auth_callback')
     slack_endpoint_url = f"https://slack.com/oauth/v2/authorize?scope={ oauth_scope }&client_id={ client_id }&redirect_uri={ local_post_install_url }"
 
     check_refresh_cookie_on_callback_endpoint = False  # might cause problems with APIs
