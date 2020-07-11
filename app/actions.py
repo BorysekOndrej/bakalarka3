@@ -80,6 +80,8 @@ def sslyze_send_scan_results(scan_dict: dict) -> bool:
     results: List[str] = scan_dict.get("results", [])
     if FlaskConfig.REMOTE_COLLECTOR:
         # todo: sent to collector
+        logger.error(
+            "sslyze_send_scan_results called with FlaskConfig.REMOTE_COLLECTOR enabled. This is currently not implemented.")
         return True
 
     for single_result_str in results:

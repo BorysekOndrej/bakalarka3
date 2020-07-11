@@ -42,7 +42,7 @@ def redis_sslyze_enqueu(ntwe_json_string: str) -> str:
     return job.get_id()
 
 
-def redis_sslyze_scan_domains_to_json(domains_json) -> str:
+def redis_sslyze_scan_domains_to_json(domains_json: str) -> str:
     twe = object_models.load_json_to_targets_with_extra(domains_json)
     res = sslyze_scanner.scan_domains_to_json(twe)
     answers = []
