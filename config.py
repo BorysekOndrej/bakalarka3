@@ -56,10 +56,19 @@ class FlaskConfig(object):
     REDIS_ENABLED = os.environ.get('REDIS_ENABLED') or False
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
 
+
+class SensorCollector(object):
+    BASE_URL = os.environ.get('SENSOR_COLLECTOR_BASE_URL', 'http://flask:5000')
+
+    GET_WORK_OVER_HTTP = os.environ.get('SENSOR_COLLECTOR_GET_WORK_OVER_HTTP', False)
+    SEND_RESULTS_OVER_HTTP = os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_OVER_HTTP', False)
+    SEND_RESULTS_TO_LOCAL_DB = os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_TO_LOCAL_DB', True)
+
+    KEY = os.environ.get('SENSOR_COLLECTOR_KEY', None)  # key is not required when the data is comming from 127.0.0.1
+    KEY_SKIP_FOR_LOCALHOST = True
+
     REMOTE_COLLECTOR = os.environ.get('REMOTE_COLLECTOR') or False
     REMOTE_COLLECTOR_GET_ALSO_WORK_OVER_HTTP = False  # Currently not implemented. todo:
-    REMOTE_COLLECTOR_BASE_URL = os.environ.get('REMOTE_COLLECTOR_BASE_URL') or 'https://bakalarka3.borysek.eu'
-    REMOTE_COLLECTOR_KEY = os.environ.get('REMOTE_COLLECTOR_KEY') or False  # key is not required when the data is comming from 127.0.0.1
 
 
 class DnsConfig(object):

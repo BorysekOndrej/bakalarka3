@@ -25,6 +25,7 @@ import app.db_schemas as db_schemas
 import app.db_models as db_models
 import app.utils.authentication_utils as authentication_utils
 import app.actions as actions
+import app.actions.sensor_collector as sensor_collector
 
 
 @bp.route('/get_target_id_from_definition', methods=['POST'])
@@ -227,7 +228,7 @@ def api_get_user_targets():
 def api_sslyze_scan_targets():
     twe = object_models.load_json_to_targets_with_extra(request.data)
     scan_result = actions.sslyze_scan(twe)
-    actions.sslyze_send_scan_results(scan_result)
+    sensor_collector.sslyze_send_scan_results(scan_result)
     return scan_result, 200
 
 

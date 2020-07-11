@@ -8,7 +8,9 @@ import app.object_models as object_models
 import app.utils.sslyze.scanner as sslyze_scanner
 import app.utils.sslyze.parse_result as sslyze_parse_result
 
-from config import FlaskConfig, SslyzeConfig
+from . import sensor_collector
+
+from config import FlaskConfig, SslyzeConfig, SensorCollector
 
 
 def get_target_definition_by_ids(target_ids: List[int], user_id: int) -> bool:
@@ -56,44 +58,22 @@ def sslyze_scan(twe: List[object_models.TargetWithExtra]) -> Dict:
 
     list_of_results_as_json: List[str] = sslyze_scanner.scan_domains_to_json(twe)
     answer = {'results_attached': True, 'results': list_of_results_as_json}
-    sslyze_send_scan_results(answer)
+    sensor_collector.sslyze_send_scan_results(answer)
     return answer
 
 
 def sslyze_enqueue_waiting_scans():
-    if FlaskConfig.REMOTE_COLLECTOR_GET_ALSO_WORK_OVER_HTTP:
+    if SensorCollector.GET_WORK_OVER_HTTP:
         # todo: get from collector
-        logger.error("sslyze_enqueue_waiting_scans called with FlaskConfig.REMOTE_COLLECTOR_GET_WORK_OVER_HTTP enabled. This is currently not implemented.")
-        pass
-    else:
-        twe = scan_scheduler.get_batch_to_scan()
-        if len(twe) == 0:
-            return {'results_attached': False,
-                    'empty_job': True}
+        logger.error("sslyze_enqueue_waiting_scans called with SensorCollector.GET_WORK_OVER_HTTP enabled. This is currently not implemented.")
+        return  # todo: return
+
+    twe = scan_scheduler.get_batch_to_scan()
+    if len(twe) == 0:
+        return {'results_attached': False,
+                'empty_job': True}
 
     return sslyze_scan(twe)
-
-
-def sslyze_send_scan_results(scan_dict: dict) -> bool:
-    if not scan_dict.get('results_attached', False):
-        return False
-    results: List[str] = scan_dict.get("results", [])
-    if FlaskConfig.REMOTE_COLLECTOR:
-        # todo: sent to collector
-        logger.error(
-            "sslyze_send_scan_results called with FlaskConfig.REMOTE_COLLECTOR enabled. This is currently not implemented.")
-        return True
-
-    for single_result_str in results:
-        try:
-            single_result: dict = json.loads(single_result_str)
-            scan_result = sslyze_parse_result.insert_scan_result_into_db(single_result)
-        except Exception as e:
-            logger.warning("Failed inserting or parsing scan result. Skipping it.")
-            logger.exception(e)
-            if not SslyzeConfig.soft_fail_on_result_parse_fail:
-                raise
-    return True
 
 
 def get_last_scan_and_result(target_id: int, user_id: int) -> Optional[

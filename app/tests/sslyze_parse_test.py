@@ -2,7 +2,7 @@ import os
 from loguru import logger
 
 from app.utils.files import read_from_file
-import app.actions as actions
+import app.actions.sensor_collector as sensor_collector
 
 
 def try_to_insert_all_scan_results():
@@ -17,4 +17,4 @@ def try_to_insert_all_scan_results():
             "results_attached": True,
             "results": [result_string]
         }
-        actions.sslyze_send_scan_results(a)
+        sensor_collector.sslyze_send_scan_results(a)
