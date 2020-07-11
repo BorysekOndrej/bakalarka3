@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from typing import List
 
@@ -54,5 +54,6 @@ class TargetWithExtraSchema(marshmallow.Schema):
 
 @dataclass
 class ScanResultResponse(object):
-    results: List[dict]
-    results_attached: bool
+    results: List[dict] = field(default_factory=list)
+    results_attached: bool = False
+    empty_job: bool = False
