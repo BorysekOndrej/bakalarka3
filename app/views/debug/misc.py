@@ -31,6 +31,7 @@ import app.utils.extract_test as extract_test
 import app.utils.authentication_utils as authentication_utils
 import app.utils.normalize_jsons as normalize_jsons
 import app.object_models as object_models
+import app.views.v1.notification_settings as slack_url_to_oauth
 
 
 @bp.route('/sslyze_get_direct_scan/<string:domain>')
@@ -311,18 +312,6 @@ def slack_pre_install():
     # This function is adopted from Slack documentation.
 
     return f'<a href="{SlackConfig.slack_endpoint_url}">Add to Slack</a>'
-
-
-@bp.route("/slack/begin_auth", methods=["GET"])
-@flask_jwt_extended.jwt_required
-def slack_url_to_oauth():
-    user_id = authentication_utils.get_user_id_from_current_jwt()
-
-    db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.SLACK,
-                                                      user_id=user_id,
-                                                      expire_in_n_minutes=10)
-    url = f'{SlackConfig.slack_endpoint_url}&state={db_code}'
-    return url, 200
 
 
 @bp.route("/slack/begin_auth_redirect", methods=["GET"])

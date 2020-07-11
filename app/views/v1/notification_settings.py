@@ -3,6 +3,7 @@ import json
 import jsons
 from typing import Optional
 
+from config import SlackConfig
 from app.utils.notifications.actions import set_notification_settings_raw_single_target
 from app.utils.notifications.user_preferences import get_effective_notification_settings, \
     get_effective_active_notification_settings, load_preferences_from_string, \
@@ -19,6 +20,18 @@ import app.utils.randomCodes as randomCodes
 import app.db_models as db_models
 import app.utils.authentication_utils as authentication_utils
 import app.actions as actions
+
+
+@bp.route("/slack/begin_auth", methods=["GET"])
+@flask_jwt_extended.jwt_required
+def slack_url_to_oauth():
+    user_id = authentication_utils.get_user_id_from_current_jwt()
+
+    db_code = randomCodes.create_and_save_random_code(activity=randomCodes.ActivityType.SLACK,
+                                                      user_id=user_id,
+                                                      expire_in_n_minutes=10)
+    url = f'{SlackConfig.slack_endpoint_url}&state={db_code}'
+    return url, 200
 
 
 @bp.route('/notification_settings_raw', methods=['GET'])
