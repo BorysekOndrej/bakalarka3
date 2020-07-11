@@ -3,15 +3,14 @@ import json
 import random
 
 import flask
-from flask import Blueprint, redirect
+from flask import redirect
 
 import app.utils.randomCodes as randomCodes
 from config import FlaskConfig, SlackConfig, MailConfig
 from app.utils.http_request_util import get_client_ip, limiter
 from app.utils.notifications.user_preferences import mail_add, mail_delete, list_connections_of_type, get_effective_notification_settings
 
-bp = Blueprint('apiDebug', __name__)
-
+from . import bp
 
 from flask import request, jsonify
 

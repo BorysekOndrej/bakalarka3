@@ -53,7 +53,7 @@ def create_app():
         from app.views.v1 import bp as api_v1
         app_new.register_blueprint(api_v1, url_prefix='/api/v1')
 
-        from app.views.apiDebug import bp as api_debug
+        from app.views.debug import bp as api_debug
         app_new.register_blueprint(api_debug, url_prefix='/api/debug')
 
         from app.views.other import bp as other_routes
