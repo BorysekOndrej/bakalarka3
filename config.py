@@ -26,7 +26,7 @@ class LogConfig(object):
 
 
 class FlaskConfig(object):
-    DEBUG = bool(os.environ.get('DEBUG', True))
+    DEBUG = bool(os.environ.get('DEBUG', False))
     # SQLALCHEMY_DATABASE_URI = 'sqlite:////' + os.path.join(basedir, 'test.db') # todo: permission problem
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + '../db/test.db' + "?check_same_thread = False" if DEBUG else ""
 
@@ -65,7 +65,7 @@ class SensorCollector(object):
 
     GET_WORK_OVER_HTTP = bool(os.environ.get('SENSOR_COLLECTOR_GET_WORK_OVER_HTTP', False))
     SEND_RESULTS_OVER_HTTP = bool(os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_OVER_HTTP', False))
-    SEND_RESULTS_TO_LOCAL_DB = bool(os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_TO_LOCAL_DB', True))
+    SEND_RESULTS_TO_LOCAL_DB = bool(os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_TO_LOCAL_DB', False))
 
     KEY = os.environ.get('SENSOR_COLLECTOR_KEY', None)  # key is not required when the data is comming from 127.0.0.1
     KEY_SKIP_FOR_LOCALHOST = True
