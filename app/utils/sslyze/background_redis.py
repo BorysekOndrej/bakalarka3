@@ -1,5 +1,3 @@
-import json
-
 import jsons
 from loguru import logger
 import redis
@@ -8,6 +6,8 @@ import app.actions.sensor_collector
 import app.object_models as object_models
 import app.utils.sslyze.scanner as sslyze_scanner
 import os
+
+import config
 
 
 def file_module_string_from_path():
@@ -42,6 +42,8 @@ def redis_sslyze_enqueu(ntwe_json_string: str) -> str:
 
 
 def redis_sslyze_scan_domains_to_json(domains_json: str) -> str:
+    logger.debug(f"config.SensorCollector.SEND_RESULTS_OVER_HTTP: {config.SensorCollector.SEND_RESULTS_OVER_HTTP}\n"
+         f"os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_OVER_HTTP') {os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_OVER_HTTP')}")
     twe = object_models.load_json_to_targets_with_extra(domains_json)
     list_of_results_as_json = sslyze_scanner.scan_domains_to_arr_of_dicts(twe)
     answer = {'results_attached': True, 'results': list_of_results_as_json}
