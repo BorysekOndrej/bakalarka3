@@ -58,7 +58,7 @@ def sslyze_scan(twe: List[object_models.TargetWithExtra]) -> Dict:
 
     list_of_results_as_json: List[str] = sslyze_scanner.scan_domains_to_json(twe)
     answer = {'results_attached': True, 'results': list_of_results_as_json}
-    sensor_collector.sslyze_send_scan_results(answer)
+    sensor_collector.sslyze_save_scan_results(answer)
     return answer
 
 

@@ -228,7 +228,7 @@ def api_get_user_targets():
 def api_sslyze_scan_targets():
     twe = object_models.load_json_to_targets_with_extra(request.data)
     scan_result = actions.sslyze_scan(twe)
-    sensor_collector.sslyze_send_scan_results(scan_result)
+    sensor_collector.sslyze_save_scan_results(scan_result)
     return scan_result, 200
 
 

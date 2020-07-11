@@ -55,5 +55,5 @@ def redis_sslyze_scan_domains_to_json(domains_json: str) -> str:
 
 
 def redis_sent_results(results_json_string):
-    app.actions.sensor_collector.sslyze_send_scan_results({'results_attached': True, 'results': results_json_string})
+    app.actions.sensor_collector.sslyze_save_scan_results({'results_attached': True, 'results': results_json_string})
 

@@ -82,5 +82,5 @@ def api_sslyze_import_scan_results(sensor_key=None):
     for x in data["results"]:
         new_res.append(json.dumps(x))
     data["results"] = new_res
-    sensor_collector.sslyze_send_scan_results(data)
+    sensor_collector.sslyze_save_scan_results(data)
     return "ok", 200

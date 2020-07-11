@@ -5,7 +5,7 @@ from loguru import logger
 import config
 
 
-def sslyze_send_scan_results(scan_dict: dict) -> bool:
+def sslyze_save_scan_results(scan_dict: dict) -> bool:
     # todo: rename to sslyze_save_scan_results
 
     if not scan_dict.get('results_attached', False):

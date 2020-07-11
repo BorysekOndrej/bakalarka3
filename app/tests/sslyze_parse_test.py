@@ -17,4 +17,4 @@ def try_to_insert_all_scan_results():
             "results_attached": True,
             "results": [result_string]
         }
-        sensor_collector.sslyze_send_scan_results(a)
+        sensor_collector.sslyze_save_scan_results(a)
