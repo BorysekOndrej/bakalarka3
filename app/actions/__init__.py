@@ -128,5 +128,3 @@ def get_scan_history(user_id: int, x_days: int = 30):  # -> Optional[Tuple[db_mo
         .all()
 
     return res
-
-

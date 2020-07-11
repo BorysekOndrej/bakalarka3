@@ -3,7 +3,7 @@ import datetime
 import json
 import random
 import jsons
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -14,11 +14,10 @@ import app.utils.sslyze.simplify_result as sslyze_result_simplify
 
 from config import FlaskConfig
 from app.utils.notifications.user_preferences import get_effective_notification_settings, \
-    get_effective_active_notification_settings, NotificationChannelOverride, \
-    filter_ids_of_notification_settings_user_can_see, mail_add, load_preferences_from_string, \
-    CONNECTION_DB_MODELS_TYPES, send_mail_validation
+    NotificationChannelOverride, mail_add, send_mail_validation
 import app.utils.notifications.send as notifications_send
 
+from app.utils.notifications.actions import set_notification_settings_raw_multiple_target_ids
 
 from . import bp
 
@@ -473,125 +472,6 @@ def api_get_basic_cert_info_for_target(target_id):
             }, 200
 
 
-@bp.route('/notification_settings_raw', methods=['GET'])
-@bp.route('/notification_settings_raw/undefined', methods=['GET'])
-@bp.route('/notification_settings_raw/null', methods=['GET'])
-@bp.route('/notification_settings_raw/<int:target_id>', methods=['GET'])
-@flask_jwt_extended.jwt_required
-def api_notification_settings_raw(user_id=None, target_id=None):
-    if user_id is None:
-        user_id = authentication_utils.get_user_id_from_current_jwt()
-
-    if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
-        return "Target either doesn't exist or user is not allowed to see it.", 401
-
-    res = db_models.db.session \
-        .query(db_models.ConnectionStatusOverrides) \
-        .filter(db_models.ConnectionStatusOverrides.user_id == user_id) \
-        .filter(db_models.ConnectionStatusOverrides.target_id == target_id) \
-        .first()
-
-    pref = res.preferences if res else ""
-    res2 = load_preferences_from_string(pref)
-
-    return jsons.dumps(res2), 200
-
-
-@bp.route('/notification_settings_raw', methods=['POST'])
-@bp.route('/notification_settings_raw/undefined', methods=['POST'])
-@bp.route('/notification_settings_raw/null', methods=['POST'])
-@bp.route('/notification_settings_raw/<int:target_id>', methods=['POST'])
-@flask_jwt_extended.jwt_required
-def api_set_notification_settings_raw(user_id: Optional[int] = None, target_id: Optional[int] = None):
-    if user_id is None:
-        user_id = authentication_utils.get_user_id_from_current_jwt()
-
-    if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
-        return "Target either doesn't exist or user is not allowed to see it.", 401
-
-    data = json.loads(request.data)
-    ok = set_notification_settings_raw_single_target(user_id, target_id, data)
-    if ok:
-        return api_notification_settings_raw(user_id, target_id)
-    return "fail", 400
-
-
-def set_notification_settings_raw_single_target(user_id: int, target_id: int, notifications: dict):
-    return set_notification_settings_raw_multiple_target_ids(user_id, [target_id], notifications)
-
-
-def set_notification_settings_raw_multiple_target_ids(user_id: int, target_ids: List[int], notifications: dict):
-    NOTIFICATION_CHANNELS = CONNECTION_DB_MODELS_TYPES.keys()
-
-    new_notification_settings = {}
-
-    for single_channel in NOTIFICATION_CHANNELS:
-        if notifications.get(single_channel) is None:
-            continue
-        new_notification_settings[single_channel] = jsons.load(notifications.get(single_channel),
-                                                               NotificationChannelOverride)
-
-        if single_channel == "email":
-            additional_channel_email_actions(new_notification_settings[single_channel], user_id)
-
-    for single_channel in NOTIFICATION_CHANNELS:
-        settings_current_channel = new_notification_settings[single_channel]
-        settings_current_channel.force_enabled_ids = \
-            filter_ids_of_notification_settings_user_can_see(
-                user_id, single_channel, settings_current_channel.force_enabled_ids)
-        settings_current_channel.force_disabled_ids = \
-            filter_ids_of_notification_settings_user_can_see(
-                user_id, single_channel, settings_current_channel.force_disabled_ids)
-
-        if jsons.dumps(settings_current_channel) == jsons.dumps(NotificationChannelOverride()):
-            del new_notification_settings[single_channel]
-
-    new_notification_settings_json_str = jsons.dumps(new_notification_settings)
-
-    if len(new_notification_settings):
-        for target_id in target_ids:
-            notifications_override: db_models.ConnectionStatusOverrides = \
-                db_utils_advanced.generic_get_create_edit_from_data(
-                    db_schemas.ConnectionStatusOverridesSchema,
-                    {"target_id": target_id, "user_id": user_id})
-            notifications_override.preferences = new_notification_settings_json_str
-        db_models.db.session.commit()
-
-    return True
-
-
-@bp.route('/notification_settings', methods=['GET'])
-@bp.route('/notification_settings/undefined', methods=['GET'])
-@bp.route('/notification_settings/null', methods=['GET'])
-@bp.route('/notification_settings/<int:target_id>', methods=['GET'])
-@flask_jwt_extended.jwt_required
-def api_notification_settings(user_id=None, target_id=None):
-    if user_id is None:
-        user_id = authentication_utils.get_user_id_from_current_jwt()
-
-    if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
-        return "Target either doesn't exist or user is not allowed to see it.", 401
-
-    connection_lists = get_effective_notification_settings(user_id, target_id)
-    return jsonify(connection_lists)
-
-
-@bp.route('/active_notification_settings', methods=['GET'])
-@bp.route('/active_notification_settings/undefined', methods=['GET'])
-@bp.route('/active_notification_settings/null', methods=['GET'])
-@bp.route('/active_notification_settings/<int:target_id>', methods=['GET'])
-@flask_jwt_extended.jwt_required
-def api_active_notification_settings(user_id=None, target_id=None):
-    if user_id is None:
-        user_id = authentication_utils.get_user_id_from_current_jwt()
-
-    if target_id is not None and not actions.can_user_get_target_definition_by_id(target_id, user_id):
-        return "Target either doesn't exist or user is not allowed to see it.", 401
-
-    connection_lists = get_effective_active_notification_settings(user_id, target_id)
-    return jsonify(connection_lists)
-
-
 @bp.route('/scan_result_history', methods=['GET'])
 @bp.route('/scan_result_history/<int:x_days>', methods=['GET'])
 @flask_jwt_extended.jwt_required
@@ -755,23 +635,3 @@ def api_resend_validation_email():
     return f'ok', 200
 
 
-@bp.route('/channel_connection/<string:channel_name>/<string:channel_id>', methods=['DELETE'])
-@flask_jwt_extended.jwt_required
-def api_channel_connection_delete(channel_name: str, channel_id: int):
-    user_id = authentication_utils.get_user_id_from_current_jwt()
-    try:
-        channel_db_model = CONNECTION_DB_MODELS_TYPES[channel_name]
-    except KeyError:
-        return "This channel doesn't exist.", 400
-
-    existing_connection = db_models.db.session \
-        .query(channel_db_model) \
-        .filter(channel_db_model.user_id == user_id) \
-        .filter(channel_db_model.id == channel_id) \
-        .first()
-
-    if existing_connection:
-        db_models.db.session.delete(existing_connection)
-        db_models.db.session.commit()
-
-    return 'ok', 200
