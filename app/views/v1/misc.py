@@ -2,15 +2,13 @@ import copy
 import datetime
 import json
 import random
-import jsons
 from typing import List
 
 import app.object_models as object_models
 import app.utils.ct_search as ct_search
 import app.utils.sslyze.simplify_result as sslyze_result_simplify
 
-from app.utils.notifications.user_preferences import get_effective_notification_settings, \
-    NotificationChannelOverride, mail_add
+from app.utils.notifications.user_preferences import get_effective_notification_settings, mail_add
 
 from app.utils.notifications.actions import set_notification_settings_raw_multiple_target_ids
 
@@ -134,12 +132,6 @@ def api_target():
 
     return f'Inserted {len(target_ids)} targets', 200
     # return api_target_by_id(target.id)  # todo: reenable this
-
-
-@bp.route('/test_jsons', methods=['POST'])
-def test_jsons():
-    data = jsons.loads(request.data, NotificationChannelOverride)
-    return jsons.dumps(data), 200
 
 
 @bp.route('/add_scan_order', methods=['POST'])
