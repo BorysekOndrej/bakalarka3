@@ -54,6 +54,7 @@ class TargetWithExtraSchema(marshmallow.Schema):
 
 @dataclass
 class ScanResultResponse(object):
-    results: List[dict] = field(default_factory=list)
+    results: list = field(default_factory=list)
+    # results is List[dict], but jsons seems to have problem with Typing.
     results_attached: bool = False
     empty_job: bool = False
