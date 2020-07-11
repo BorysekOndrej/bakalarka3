@@ -50,7 +50,7 @@ def create_app():
     with app_new.app_context():
         limiter.init_app(app_new)
 
-        from app.views.apiV1 import bp as api_v1
+        from app.views.v1 import bp as api_v1
         app_new.register_blueprint(api_v1, url_prefix='/api/v1')
 
         from app.views.apiDebug import bp as api_debug

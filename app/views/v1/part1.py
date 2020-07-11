@@ -21,7 +21,7 @@ from app.utils.notifications.user_preferences import get_effective_notification_
 import app.utils.notifications.send as notifications_send
 
 
-bp = Blueprint('apiV1', __name__)
+from . import bp
 
 import flask
 from flask import request, jsonify
