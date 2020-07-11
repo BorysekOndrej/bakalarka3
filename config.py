@@ -70,9 +70,6 @@ class SensorCollector(object):
     KEY = os.environ.get('SENSOR_COLLECTOR_KEY', None)  # key is not required when the data is comming from 127.0.0.1
     KEY_SKIP_FOR_LOCALHOST = True
 
-    REMOTE_COLLECTOR = bool(os.environ.get('REMOTE_COLLECTOR', False))
-    REMOTE_COLLECTOR_GET_ALSO_WORK_OVER_HTTP = False  # Currently not implemented. todo:
-
 
 class DnsConfig(object):
     nameservers = ['8.8.8.8', '1.1.1.1']
