@@ -139,3 +139,7 @@ class MailConfig(object):
     tls = bool(os.environ.get('MAIL_TLS_ENABLED') or False)     # will be overwriten if you use gmail
 
     check_refresh_cookie_on_validating_email = False  # might cause problems with APIs
+
+
+class DebugConfig(object):
+    delay_on_jwt_refresh_endpoint = os.environ.get("DEBUG_DELAY_ON_JWT_REFRESH_ENDPOINT", False)

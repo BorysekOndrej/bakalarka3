@@ -5,7 +5,7 @@ from typing import Tuple
 
 import app.utils.randomCodes as randomCodes
 
-from config import FlaskConfig
+from config import FlaskConfig, DebugConfig
 import app.utils.notifications.send as notifications_send
 
 from . import bp
@@ -111,9 +111,9 @@ def refresh():
     # logger.error(current_user)
     new_token = flask_jwt_extended.create_access_token(identity=current_user, fresh=False)  # todo: check expires
     ret = {'access_token': new_token}
-    if FlaskConfig.DEBUG:
+    if DebugConfig.delay_on_jwt_refresh_endpoint:
         import time
-        time.sleep(10)  # todo: remove after debugging
+        time.sleep(10)
     return jsonify(ret), 200
 
 
