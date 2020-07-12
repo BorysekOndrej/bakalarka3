@@ -96,7 +96,7 @@ class SslyzeConfig(object):
     save_results_also_to_tmp_files = True
     soft_fail_on_result_parse_fail = True
 
-    cert_scan_only = FlaskConfig.DEBUG  # todo: disable but don't remove the option. Usefull in debug
+    cert_scan_only = bool(os.environ.get('SSLYZE_CERT_SCAN_ONLY', False))
 
 
 class CacheConfig(object):
