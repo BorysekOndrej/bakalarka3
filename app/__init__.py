@@ -6,9 +6,12 @@ from flask_marshmallow import Marshmallow
 from flask_cors import CORS
 import rq_dashboard
 from app.utils.http_request_util import limiter
-from app.utils.authentication_utils import jwt_instance
+from app.utils.authentication_utils import jwt_instance, check_if_jwt_secret_key_is_too_short
 
 import config
+
+if config.FlaskConfig.START_FLASK:
+    check_if_jwt_secret_key_is_too_short(sigkill_on_problem=True)
 
 if config.FlaskConfig.REDIS_ENABLED:
     from redis import Redis

@@ -26,6 +26,8 @@ class LogConfig(object):
 
 
 class FlaskConfig(object):
+    START_FLASK = bool(os.environ.get("START_FLASK", False))
+
     DEBUG = bool(os.environ.get('DEBUG', False))
     # SQLALCHEMY_DATABASE_URI = 'sqlite:////' + os.path.join(basedir, 'test.db') # todo: permission problem
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + '../db/test.db' + "?check_same_thread = False" if DEBUG else ""
@@ -34,11 +36,14 @@ class FlaskConfig(object):
     SQLALCHEMY_ECHO = False
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'DEV-KEY-ONE'
 
-    JWT_SECRET_KEY = 'dolor sit amet'  # todo: change this
-
     JWT_TOKEN_LOCATION = ('headers', 'cookies')
     # having tokens primarily in cookies would make it easier to develop API clients. I don't want to make it default.
     # A simple change of this config should make it work and not break anything in the code.
+
+    JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS512")
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
+    # if using HS512 algorithm JWT_SECRET_KEY needs to be at least 90 chars,
+    # otherwise the program will be killed for security reasons.
 
     JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(minutes=15)
     JWT_REFRESH_TOKEN_EXPIRES = datetime.timedelta(days=40)  # todo: this doesn't work. check!
