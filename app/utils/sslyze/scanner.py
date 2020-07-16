@@ -10,7 +10,9 @@ from sslyze.plugins.plugins_repository import PluginsRepository
 from sslyze.cli.json_output import _CustomJsonEncoder
 
 from loguru import logger
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+import app.utils.sslyze.scan_commands as scan_commands
 
 import app.utils.files
 from config import SslyzeConfig
@@ -66,13 +68,13 @@ def scan_result_to_dicts(scan_result):
     return server_info, scan_result_dict
 
 
-def scan(targets: List[object_models.TargetWithExtra]) -> List[ScanResult]:
+def scan(targets: List[object_models.TargetWithExtra], command_names: Optional[str] = None) -> List[ScanResult]:
     logger.info(f"New scan initiated with sslyze version {sslyze_version} for target {targets}")
-    plugins_repository = PluginsRepository()
-    commands = plugins_repository.get_available_commands()
 
-    if SslyzeConfig.cert_scan_only:
-        commands = [sslyze.plugins.certificate_info_plugin.CertificateInfoScanCommand]  # sslyze.ScanCommand.CERTIFICATE_INFO
+    if command_names is None:
+        commands = scan_commands.from_names_to_scan_commands(SslyzeConfig.limit_scan_to_scan_commands_names)
+    else:
+        commands = scan_commands.from_names_to_scan_commands(command_names)
 
     domain_results = []
 
