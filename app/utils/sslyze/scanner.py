@@ -104,7 +104,7 @@ def scan(targets: List[object_models.TargetWithExtra], command_names: Optional[s
         scan_results = set()
 
         if SslyzeConfig.asynchronous_scanning:
-            # asynchronous
+            logger.debug("Using SSLyze asynchronous scanner")
             scanner = ConcurrentScanner(network_timeout=scanner_plugin_network_timeout)
             for scan_command in commands:
                 scanner.queue_scan_command(server_info, scan_command())
@@ -115,7 +115,7 @@ def scan(targets: List[object_models.TargetWithExtra], command_names: Optional[s
                 scan_results.add(scan_result)
 
         else:
-            # synchronous
+            logger.debug("Using SSLyze synchronous scanner")
             scanner = SynchronousScanner(network_timeout=scanner_plugin_network_timeout)
             for scan_command in commands:
                 try:
