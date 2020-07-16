@@ -35,7 +35,9 @@ def create_app():
 
     if config.FlaskConfig.REDIS_ENABLED:
         app_new.redis = Redis.from_url(config.FlaskConfig.REDIS_URL)
-        app_new.sslyze_task_queue = rq.Queue('sslyze-tasks', connection=app_new.redis)
+        app_new.sslyze_task_queue = rq.Queue('sslyze-tasks',
+                                             connection=app_new.redis,
+                                             default_timeout=config.SslyzeConfig.background_worker_timeout)
 
     db.init_app(app_new)
 

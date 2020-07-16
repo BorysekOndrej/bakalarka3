@@ -37,9 +37,7 @@ def redis_sslyze_enqueu(ntwe_json_string: str) -> str:
         logger.warning("The background_redis static string is not equal to the expected one.\n"
             f"{module_and_function_string}\n{expected_module_string}")
 
-    job: rq.job = queue.enqueue(module_and_function_string,
-                                ntwe_json_string,
-                                timeout=SslyzeConfig.background_worker_timeout)
+    job: rq.job = queue.enqueue(module_and_function_string, ntwe_json_string)
     return job.get_id()
 
 
