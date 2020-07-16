@@ -108,6 +108,7 @@ class SslyzeConfig(object):
     save_results_also_to_tmp_files = True
     soft_fail_on_result_parse_fail = True
 
+    # The following parameter should be set on a sensor or wherever the scanning actually happens.
     limit_scan_to_scan_commands_names = os.environ.get("SSLYZE_LIMIT_SCANS_TO_SCAN_COMMANDS_NAMES", "DONT_LIMIT")
 
 
