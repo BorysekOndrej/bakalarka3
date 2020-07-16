@@ -48,7 +48,7 @@ def get_target_from_id_if_user_can_see(target_id: int, user_id: int) -> Optional
 
 
 def sslyze_scan(twe: List[object_models.TargetWithExtra], save_result=True) -> Dict:
-    if FlaskConfig.REDIS_ENABLED:
+    if SensorCollector.PUT_WORK_TO_REDIS_JOB_QUEUE:
         ntwe_json_list = object_models.TargetWithExtraSchema().dump(twe, many=True)
         ntwe_json_string = json.dumps(ntwe_json_list)
 

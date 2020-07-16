@@ -7,7 +7,7 @@ import jsons
 from flask import redirect
 
 import app.utils.randomCodes as randomCodes
-from config import FlaskConfig, SlackConfig, MailConfig
+from config import FlaskConfig, SlackConfig, MailConfig, SensorCollector
 from app.utils.http_request_util import get_client_ip, limiter
 from app.utils.notifications.user_preferences import mail_add, mail_delete, list_connections_of_type, \
     get_effective_notification_settings, NotificationChannelOverride
@@ -60,7 +60,7 @@ def debug_sslyze_batch_direct_scan():
 @bp.route('/sslyze_batch_scan_enqueue_redis', methods=['POST'])
 def debug_sslyze_batch_scan_enqueue_redis():
     # todo: DEPRECATED
-    if not FlaskConfig.REDIS_ENABLED:
+    if not SensorCollector.PUT_WORK_TO_REDIS_JOB_QUEUE:
         return "Redis support is not enabled in config", 500
     import app.utils.sslyze.background_redis as sslyze_background_redis
 
@@ -74,7 +74,7 @@ def debug_sslyze_batch_scan_enqueue_redis():
 
 @bp.route('/sslyze_batch_scan_result_redis/<string:job_id>', methods=['GET'])
 def debug_sslyze_batch_scan_result_redis(job_id):
-    if not FlaskConfig.REDIS_ENABLED:
+    if not SensorCollector.PUT_WORK_TO_REDIS_JOB_QUEUE:
         return "Redis support is not enabled in config", 500
     import app.utils.sslyze.background_redis as sslyze_background_redis
 

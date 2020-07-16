@@ -69,6 +69,9 @@ class SensorCollector(object):
     BASE_URL = os.environ.get('SENSOR_COLLECTOR_BASE_URL', 'http://flask:5000')
 
     GET_WORK_OVER_HTTP = bool(os.environ.get('SENSOR_COLLECTOR_GET_WORK_OVER_HTTP', False))
+    PUT_WORK_TO_REDIS_JOB_QUEUE = FlaskConfig.REDIS_ENABLED and \
+                                  bool(os.environ.get('SENSOR_COLLECTOR_PUT_WORK_TO_REDIS_JOB_QUEUE', False))
+
     SEND_RESULTS_OVER_HTTP = bool(os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_OVER_HTTP', False))
     SEND_RESULTS_TO_LOCAL_DB = bool(os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_TO_LOCAL_DB', False))
 
