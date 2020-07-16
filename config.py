@@ -100,7 +100,7 @@ class SchedulerConfig(object):
 
 
 class SslyzeConfig(object):
-    asynchronous_scanning = False
+    asynchronous_scanning = bool(os.environ.get('SSLYZE_ASYNCHRONOUS_SCANNING', False))
     save_results_also_to_tmp_files = True
     soft_fail_on_result_parse_fail = True
 
