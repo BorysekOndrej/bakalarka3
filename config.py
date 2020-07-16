@@ -101,6 +101,8 @@ class SchedulerConfig(object):
 
 class SslyzeConfig(object):
     asynchronous_scanning = bool(os.environ.get('SSLYZE_ASYNCHRONOUS_SCANNING', False))
+    background_worker_timeout = os.environ.get('SSLYZE_BACKGROUNG_WORKER_TIMEOUT', '3m')  # https://python-rq.org/docs/jobs/
+
     save_results_also_to_tmp_files = True
     soft_fail_on_result_parse_fail = True
 

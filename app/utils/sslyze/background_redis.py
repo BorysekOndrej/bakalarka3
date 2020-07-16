@@ -7,7 +7,7 @@ import app.object_models as object_models
 import app.utils.sslyze.scanner as sslyze_scanner
 import os
 
-import config
+from config import SslyzeConfig, SensorCollector
 
 
 def file_module_string_from_path():
@@ -37,12 +37,14 @@ def redis_sslyze_enqueu(ntwe_json_string: str) -> str:
         logger.warning("The background_redis static string is not equal to the expected one.\n"
             f"{module_and_function_string}\n{expected_module_string}")
 
-    job: rq.job = queue.enqueue(module_and_function_string, ntwe_json_string)
+    job: rq.job = queue.enqueue(module_and_function_string,
+                                ntwe_json_string,
+                                timeout=SslyzeConfig.background_worker_timeout)
     return job.get_id()
 
 
 def redis_sslyze_scan_domains_to_json(domains_json: str) -> str:
-    logger.debug(f"config.SensorCollector.SEND_RESULTS_OVER_HTTP: {config.SensorCollector.SEND_RESULTS_OVER_HTTP}\n"
+    logger.debug(f"config.SensorCollector.SEND_RESULTS_OVER_HTTP: {SensorCollector.SEND_RESULTS_OVER_HTTP}\n"
          f"os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_OVER_HTTP') {os.environ.get('SENSOR_COLLECTOR_SEND_RESULTS_OVER_HTTP')}")
     twe = object_models.load_json_to_targets_with_extra(domains_json)
     list_of_results_as_json = sslyze_scanner.scan_domains_to_arr_of_dicts(twe)
