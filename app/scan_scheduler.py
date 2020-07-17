@@ -103,7 +103,7 @@ def mark_enqueued_targets(target_ids, time=None):
     db.session.commit()
 
 
-def mark_scanned_targets(target_ids, time=None):
+def mark_scanned_targets(target_ids: List[int], time=None):
     if not target_ids:
         return
     if time is None:
@@ -158,7 +158,7 @@ def get_batch_to_scan(limit_n=SchedulerConfig.batch_size) -> List[object_models.
             ips = dns_utils.get_ips_for_domain(single_target.hostname)
 
             if len(ips) == 0:
-                mark_scanned_targets(single_target.id)
+                mark_scanned_targets([single_target.id])
                 logger.info(f'No DNS results for {single_target.hostname} (id {single_target.id}).')
                 # todo: produce result with information about empty reason for scan failure
                 continue
