@@ -169,7 +169,7 @@ def parse_certificate_information_ocsp_response(obj) -> int:
 
 def parse_certificate_information(scan_result, plugin_title):
     current_plugin = scan_result["results"][plugin_title]
-    logger.debug(current_plugin)
+    # logger.debug(current_plugin)
 
     current_plugin["received_certificate_chain_list_id"] = parse_certificate_chain(current_plugin[
                                                                                        "received_certificate_chain"])
