@@ -1,5 +1,6 @@
 import copy
 import os
+import typing
 from hashlib import sha256
 
 import app
@@ -373,7 +374,12 @@ def insert_scan_result_into_db(scan_result_orig: dict) -> app.db_models.ScanResu
         # this expects Ciphers Suites to be parsed
         obj.server_info_id = parse_server_info(scan_result)
 
-    res = db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ScanResultsForeignKeysOnlySchema, obj)  # todo: general
+    res: typing.Optional[db_models.ScanResults] = \
+        db_utils_advanced.generic_get_create_edit_from_transient(db_schemas.ScanResultsForeignKeysOnlySchema, obj)  # todo: general
+
+    if res is None:
+        logger.warning("Error inserting Scan result to DB. Aborting.")
+        return
 
     scanresult_id = res.id
     update_references_to_scan_result(target, scanresult_id)
