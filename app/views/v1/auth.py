@@ -43,7 +43,8 @@ def action_login(username, password) -> Tuple[str, int]:
     if len(msg):
         return jsonify({"msg": msg}), 400
 
-    # todo: validate inputs
+    # todo: validate inputs based on password rules
+    # todo: check password uniqueness?
 
     res = db_models.db.session \
         .query(db_models.User) \
@@ -109,12 +110,18 @@ def refresh():
     # logger.error(request.cookies)
     current_user = flask_jwt_extended.get_jwt_identity()
     # logger.error(current_user)
-    new_token = flask_jwt_extended.create_access_token(identity=current_user, fresh=False)  # todo: check expires
-    ret = {'access_token': new_token}
+    access_token = flask_jwt_extended.create_access_token(identity=current_user, fresh=False)
+    refresh_token = flask_jwt_extended.create_refresh_token(identity=current_user)
+    response_object = jsonify(access_token=access_token)
+    response_object: flask.Response
+
+    flask_jwt_extended.set_refresh_cookies(response_object, refresh_token)
+
     if DebugConfig.delay_on_jwt_refresh_endpoint:
         import time
         time.sleep(10)
-    return jsonify(ret), 200
+
+    return response_object, 200
 
 
 @bp.route('/logout', methods=['GET'])
