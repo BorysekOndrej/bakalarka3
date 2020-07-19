@@ -31,7 +31,6 @@ import app.utils.extract_test as extract_test
 import app.utils.authentication_utils as authentication_utils
 import app.utils.normalize_jsons as normalize_jsons
 import app.object_models as object_models
-import app.views.v1.notification_settings as slack_url_to_oauth
 
 
 @bp.route('/sslyze_get_direct_scan/<string:domain>')
@@ -314,51 +313,10 @@ def slack_pre_install():
     return f'<a href="{SlackConfig.slack_endpoint_url}">Add to Slack</a>'
 
 
-@bp.route("/slack/begin_auth_redirect", methods=["GET"])
-@flask_jwt_extended.jwt_required
-def slack_redirect_to_oauth():
-    url, _ = slack_url_to_oauth()
-    return redirect(url, code=302)
-
-
 @bp.route("/slack/test_auth_to_db", methods=["GET"])
 def slack_test():
     import app.utils.notifications.slack_add_connection as notifications_slack
     return notifications_slack.save_slack_config()
-
-
-@bp.route("/slack/auth_callback", methods=["GET", "POST"])
-@authentication_utils.jwt_refresh_token_if_check_enabled(SlackConfig.check_refresh_cookie_on_callback_endpoint)
-def slack_oauth_callback():
-    # security: It's not possible to get here Access token. (This requests comes from users browser after redirect from
-    #  Slack. Refresh token should be in cookies, but that might make problems with API calls. It's dificult to say what
-    #  should be the correct behaviour. For now I'll lock it down so that the following scenario is not possible.
-    #  Scenario:
-    #       - Attacker generates URL using endpoint slack_redirect_to_oauth. He sends it to victim.
-    #       - Victim fills out the Slack authorization form and submits it.
-    #       - Attacker gets the access because he is the one who initiated the request.
-    #  Now replace the work Attacker with Employee and it sounds like legit scenario.
-    #  Current behaviour: The slack_redirect_to_oauth and slack_oauth_callback need to be initiated by the same user.
-    #                     The slack_oauth_callback expects refresh token in cookie, can be disabled in config.
-
-    user_id = None
-    if SlackConfig.check_refresh_cookie_on_callback_endpoint:
-        user_id = authentication_utils.get_user_id_from_current_jwt()
-
-    auth_code = request.args['code']
-    db_code = request.args['state']
-
-    db_code_valid, res_or_error_msg = randomCodes.validate_code(db_code, randomCodes.ActivityType.SLACK, user_id)
-
-    if not db_code_valid:
-        return res_or_error_msg, 400
-    res: db_models.TmpRandomCodes = res_or_error_msg
-
-    import app.utils.notifications.slack_add_connection as notifications_slack
-    ok = notifications_slack.validate_code_and_save(auth_code, res.user_id)
-    if ok:
-        return 'OK. Window will close in 2 seconds. <script>setTimeout(function(){ close() }, 2000);</script>', 200
-    return 'fail', 500
 
 
 @bp.route('/mail_connections', methods=['GET'])

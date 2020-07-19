@@ -8,8 +8,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 class ServerLocation(object):
-    address = os.environ.get('SERVER_IP', '0.0.0.0')
-    port = os.environ.get('SERVER_PORT', 5000)
+    address = os.environ.get('SERVER_LISTEN_ON_IP', '0.0.0.0')
+    port = os.environ.get('SERVER_LISTEN_ON_PORT', 5000)
     PUBLIC_URL = os.environ.get('SERVER_PUBLIC_URL', 'http://example.com')
 
     # The correct determination of client IP is important for rate limiting of non-authenticated endpoints.
@@ -126,7 +126,7 @@ class SlackConfig(object):
     client_secret = os.environ.get("SLACK_CLIENT_SECRET")
     oauth_scope = os.environ.get("SLACK_BOT_SCOPE", "incoming-webhook")
 
-    local_post_install_url = os.environ.get("SLACK_POST_INSTALL_URL", f'{ServerLocation.PUBLIC_URL}/api/debug/slack/auth_callback')
+    local_post_install_url = os.environ.get("SLACK_POST_INSTALL_URL", f'{ServerLocation.PUBLIC_URL}/api/v1/slack/auth_callback')
     slack_endpoint_url = f"https://slack.com/oauth/v2/authorize?scope={ oauth_scope }&client_id={ client_id }&redirect_uri={ local_post_install_url }"
 
     check_refresh_cookie_on_callback_endpoint = os.environ.get("SLACK_CHECK_REFRESH_COOKIE_ON_RETURN", False)  # can user verify slack from different device than on which he started from?
