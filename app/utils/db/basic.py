@@ -90,14 +90,15 @@ def get_or_create_by_unique(model: app.db.Model, kwargs: dict, search_by: Option
     logger.debug(f"get_or_create_or_update_by_unique searching model {model} by {search_by}")
 
     if config.CacheConfig.enabled:
-        pass  # todo: implement cache here
-    else:
-        try:
-            return model.query.filter_by(**search_by).one(), True
-        except NoResultFound:
-            if get_only:
-                return None, False
-            return get_one_or_create(model, **kwargs)
+        if False:
+            return  # todo: Cache can be safely implemented here. If result is found in cache, return, otherwise let DB handle it.
+
+    try:
+        return model.query.filter_by(**search_by).one(), True
+    except NoResultFound:
+        if get_only:
+            return None, False
+        return get_one_or_create(model, **kwargs)
 
 
 def get_or_create_or_update_by_unique(model: app.db.Model, kwargs: dict, get_only=False) -> Optional[app.db.Model]:
