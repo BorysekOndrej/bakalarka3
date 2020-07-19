@@ -91,12 +91,12 @@ class ImportConfig(object):
 
 
 class SchedulerConfig(object):
-    enqueue_min_time = int(os.environ.get('MINIMUM_TIME_BETWEEN_ENQUEUING_TO_NEW_JOB'), 60*60)  # seconds
-    batch_increments = int(os.environ.get('BATCH_INCREMENTS') or 1)  # How many Defined targets to add in each iteration. Defined target can resolve into many Scan targets when multiple IPs are ressolved by DNS.
-    batch_size = int(os.environ.get('BATCH_SIZE') or 1)  # Desired batch size of Scan targets per each scan batch. The actual upper limit will be: batch_size - batch_increments + (batch_increments * max_records_per_resolve)
-    max_first_scan_delay = int(os.environ.get('FIRST_SCAN_RANDOM_DELAY'), 0)  # seconds
+    enqueue_min_time = int(os.environ.get('MINIMUM_TIME_BETWEEN_ENQUEUING_TO_NEW_JOB', str(60*60)))  # seconds
+    batch_increments = int(os.environ.get('BATCH_INCREMENTS', str(1)))  # How many Defined targets to add in each iteration. Defined target can resolve into many Scan targets when multiple IPs are ressolved by DNS.
+    batch_size = int(os.environ.get('BATCH_SIZE', str(1)))  # Desired batch size of Scan targets per each scan batch. The actual upper limit will be: batch_size - batch_increments + (batch_increments * max_records_per_resolve)
+    max_first_scan_delay = int(os.environ.get('FIRST_SCAN_RANDOM_DELAY', str(0)))  # seconds
 
-    default_target_scan_periodicity = int(os.environ.get('DEFAULT_TARGET_SCAN_PERIODICITY'), 12*60*60)  # seconds
+    default_target_scan_periodicity = int(os.environ.get('DEFAULT_TARGET_SCAN_PERIODICITY', str(12*60*60)))  # seconds
 
 
 class SslyzeConfig(object):
@@ -142,7 +142,7 @@ class MailConfig(object):
     sender_email = os.environ.get('MAIL_SENDER_EMAIL') or username
 
     hostname = os.environ.get('MAIL_HOSTNAME') or "127.0.0.1"   # will be overwriten if you use gmail
-    port = int(os.environ.get('MAIL_PORT') or 25)               # will be overwriten if you use gmail
+    port = int(os.environ.get('MAIL_PORT', str(25)))            # will be overwriten if you use gmail
     tls = bool(os.environ.get('MAIL_TLS_ENABLED') or False)     # will be overwriten if you use gmail
 
     check_refresh_cookie_on_validating_email = os.environ.get("EMAIL_CHECK_REFRESH_COOKIE_ON_VALIDATION", False)  # can user verify email from different device than on which he started from?
