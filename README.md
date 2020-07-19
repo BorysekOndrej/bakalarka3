@@ -1,11 +1,13 @@
-# bakalarka3
+# TLSInventory - backend
 
+This is backend of aplication [TLSInventory](https://github.com/TLSInventory).
 
-Exactly Python 3.7.x required until I upgrade to SSLyze 3.*
+This section serves as the main API server and also contains all the scanners.
+Sensors are deployed as instances of this repository, with a different entrypoint.
 
+For information how to deploy this aplication check the [Docker repository](https://github.com/TLSInventory/Docker).
 
-If you're running the program with with Redis you also have to run the following:
-```
-rq worker sslyze-tasks
-rq worker --with-scheduler
-```
+# Backend requirements 
+
+Exactly Python 3.7.x is required until I upgrade to SSLyze 3.*
+Python packages are listed in file `requirements.txt`.
