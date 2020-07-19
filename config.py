@@ -8,8 +8,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 class ServerLocation(object):
-    address = '0.0.0.0'
-    port = 5000
+    address = os.environ.get('SERVER_IP', '0.0.0.0')
+    port = os.environ.get('SERVER_PORT', 5000)
     PUBLIC_URL = os.environ.get('SERVER_PUBLIC_URL', 'http://example.com')
 
     # The correct determination of client IP is important for rate limiting of non-authenticated endpoints.
@@ -21,21 +21,22 @@ class ServerLocation(object):
 
 
 class LogConfig(object):
-    log_folder = 'log' + '/'
+    log_folder = os.environ.get('LOGURU_LOG_FOLDER', 'log/')
     cors_level = logging.INFO
 
 
 class FlaskConfig(object):
     START_FLASK = bool(os.environ.get("START_FLASK", False))
+    SECRET_KEY = os.environ.get('SECRET_KEY', os.urandom(16))  # warning: autogenerating SECRET_KEY will change session on each flask restart
 
     DEBUG = bool(os.environ.get('DEBUG', False))
-    # SQLALCHEMY_DATABASE_URI = 'sqlite:////' + os.path.join(basedir, 'test.db') # todo: permission problem
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + '../db/test.db' + "?check_same_thread = False" if DEBUG else ""
 
+    # SQLAlchemy
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + '../db/test.db' + "?check_same_thread = False" if DEBUG else ""
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = False
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'DEV-KEY-ONE'
 
+    # JWT
     JWT_TOKEN_LOCATION = ('headers', 'cookies')
     # having tokens primarily in cookies would make it easier to develop API clients. I don't want to make it default.
     # A simple change of this config should make it work and not break anything in the code.
@@ -46,21 +47,20 @@ class FlaskConfig(object):
     # otherwise the program will be killed for security reasons.
 
     JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(minutes=15)
-    JWT_REFRESH_TOKEN_EXPIRES = datetime.timedelta(days=40)  # todo: this doesn't work. check!
-    # JWT_REFRESH_TOKEN_EXPIRES = 1000
+    JWT_REFRESH_TOKEN_EXPIRES = datetime.timedelta(days=40)
     JWT_BLACKLIST_ENABLED = True
     JWT_BLACKLIST_TOKEN_CHECKS = 'refresh'  # i.e. access tokens won't be revocable, only automatically expired
 
-    # JWT_REFRESH_COOKIE_PATH = "/api/v1/refreshToken"  # default, todo: change
-    JWT_REFRESH_COOKIE_PATH = "/"  # default, todo: change
-    JWT_COOKIE_SECURE = False  # todo: set to True
-    # JWT_COOKIE_DOMAIN = "bakalarka3.borysek"  # default, todo: change
+    JWT_REFRESH_COOKIE_PATH = "/api/v1/refreshToken"
+    JWT_COOKIE_SECURE = bool(os.environ.get('JWT_COOKIE_SECURE', False if DEBUG else True))
+
     JWT_SESSION_COOKIE = False
     JWT_COOKIE_SAMESITE = None  # default, todo: change
     JWT_COOKIE_CSRF_PROTECT = False
+    # JWT_COOKIE_DOMAIN
 
-    # JWT_SESSION_COOKIE = True
 
+    # Redis
     REDIS_ENABLED = bool(os.environ.get('REDIS_ENABLED', False))
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://'
 
@@ -81,8 +81,8 @@ class SensorCollector(object):
 
 class DnsConfig(object):
     nameservers = ['8.8.8.8', '1.1.1.1']
-    types_of_records = ['A']  #, 'AAAA']  # todo consider CNAMEs?
-    max_records_per_resolve = 2  # 50  # todo
+    types_of_records = ['A']  #, 'AAAA']
+    max_records_per_resolve = 2
 
 
 class ImportConfig(object):
@@ -91,35 +91,34 @@ class ImportConfig(object):
 
 
 class SchedulerConfig(object):
-    enqueue_min_time = 60*60  # seconds
-    batch_increments = int(os.environ.get('BATCH_INCREMENTS') or 2)  # How many Defined targets to add in each iteration. Defined target can resolve into many Scan targets when multiple IPs are ressolved by DNS.
-    batch_size = int(os.environ.get('BATCH_SIZE') or 3)  # Desired batch size of Scan targets per each scan batch. The actual upper limit will be: batch_size - batch_increments + (batch_increments * max_records_per_resolve)
-    max_first_scan_delay = 4 * 60
+    enqueue_min_time = int(os.environ.get('MINIMUM_TIME_BETWEEN_ENQUEUING_TO_NEW_JOB'), 60*60)  # seconds
+    batch_increments = int(os.environ.get('BATCH_INCREMENTS') or 1)  # How many Defined targets to add in each iteration. Defined target can resolve into many Scan targets when multiple IPs are ressolved by DNS.
+    batch_size = int(os.environ.get('BATCH_SIZE') or 1)  # Desired batch size of Scan targets per each scan batch. The actual upper limit will be: batch_size - batch_increments + (batch_increments * max_records_per_resolve)
+    max_first_scan_delay = int(os.environ.get('FIRST_SCAN_RANDOM_DELAY'), 0)  # seconds
 
-    default_target_scan_periodicity = 12*60*60  # 12 hours
+    default_target_scan_periodicity = int(os.environ.get('DEFAULT_TARGET_SCAN_PERIODICITY'), 12*60*60)  # seconds
 
 
 class SslyzeConfig(object):
     asynchronous_scanning = bool(os.environ.get('SSLYZE_ASYNCHRONOUS_SCANNING', False))
-
-    # The following parameter should be set on main server and currently only works with Redis.
-    background_worker_timeout = os.environ.get('SSLYZE_BACKGROUNG_WORKER_TIMEOUT', '3m')  # https://python-rq.org/docs/jobs/
-
-    save_results_also_to_tmp_files = True
-    soft_fail_on_result_parse_fail = True
-
     # The following parameter should be set on a sensor or wherever the scanning actually happens.
     limit_scan_to_scan_commands_names = os.environ.get("SSLYZE_LIMIT_SCANS_TO_SCAN_COMMANDS_NAMES", "DONT_LIMIT")
 
+    # The following parameter should be set on main server and currently only works with Redis.
+    # background_worker_timeout = os.environ.get('SSLYZE_BACKGROUNG_WORKER_TIMEOUT', '3m')  # https://python-rq.org/docs/jobs/
+    background_worker_timeout = '5m'
+
+    save_results_also_to_tmp_files = False
+    soft_fail_on_result_parse_fail = True
+
 
 class CacheConfig(object):
-    enabled = False  # currently no cache implemented. Do NOT enable
+    enabled = bool(os.environ.get('CACHE_ENABLE', False)) and FlaskConfig.REDIS_ENABLED
 
 
 class NotificationsConfig(object):
     start_sending_notifications_x_days_before_expiration = 1000  # this is currently here before better scheduler is implemented
-    #default_pre_expiration_periods_in_days = "1,7,14,30"
-    default_pre_expiration_periods_in_days = "1,7,14,30,151"
+    default_pre_expiration_periods_in_days = os.environ.get("NOTIFICATIONS_X_DAYS_BEFORE_EXPIRATION", "1,7,14")
 
 
 class SlackConfig(object):
@@ -130,7 +129,7 @@ class SlackConfig(object):
     local_post_install_url = os.environ.get("SLACK_POST_INSTALL_URL", f'{ServerLocation.PUBLIC_URL}/api/debug/slack/auth_callback')
     slack_endpoint_url = f"https://slack.com/oauth/v2/authorize?scope={ oauth_scope }&client_id={ client_id }&redirect_uri={ local_post_install_url }"
 
-    check_refresh_cookie_on_callback_endpoint = False  # might cause problems with APIs
+    check_refresh_cookie_on_callback_endpoint = os.environ.get("SLACK_CHECK_REFRESH_COOKIE_ON_RETURN", False)  # can user verify slack from different device than on which he started from?
 
 
 class MailConfig(object):
@@ -146,7 +145,7 @@ class MailConfig(object):
     port = int(os.environ.get('MAIL_PORT') or 25)               # will be overwriten if you use gmail
     tls = bool(os.environ.get('MAIL_TLS_ENABLED') or False)     # will be overwriten if you use gmail
 
-    check_refresh_cookie_on_validating_email = False  # might cause problems with APIs
+    check_refresh_cookie_on_validating_email = os.environ.get("EMAIL_CHECK_REFRESH_COOKIE_ON_VALIDATION", False)  # can user verify email from different device than on which he started from?
 
 
 class DebugConfig(object):
