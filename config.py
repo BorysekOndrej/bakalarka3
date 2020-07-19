@@ -124,7 +124,7 @@ class NotificationsConfig(object):
 class SlackConfig(object):
     client_id = os.environ.get("SLACK_CLIENT_ID")
     client_secret = os.environ.get("SLACK_CLIENT_SECRET")
-    oauth_scope = os.environ.get("SLACK_BOT_SCOPE")
+    oauth_scope = os.environ.get("SLACK_BOT_SCOPE", "incoming-webhook")
 
     local_post_install_url = os.environ.get("SLACK_POST_INSTALL_URL", f'{ServerLocation.PUBLIC_URL}/api/debug/slack/auth_callback')
     slack_endpoint_url = f"https://slack.com/oauth/v2/authorize?scope={ oauth_scope }&client_id={ client_id }&redirect_uri={ local_post_install_url }"
