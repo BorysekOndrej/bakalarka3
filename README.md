@@ -1,5 +1,11 @@
 # TLSInventory - backend
 
+## THIS REPOSITORY IS DEPRECATED
+
+This repository is deprecated in favor of https://github.com/TLSInventory/backend This one will be archived and later on deleted.
+
+### Original content
+
 This is backend of application [TLSInventory](https://github.com/TLSInventory).
 
 This section serves as the main API server and also contains all the scanners.
